@@ -61,14 +61,15 @@
                   v-model="sliderValue"
                   :min="0"
                   :max="100"
-                  @change="onSliderSuccess"
+                  :disabled="sliderSuccess"
+                  :show-tooltip="false"
+                  @change="handleSliderChange"
               />
             </div>
           </div>
 
           <el-form-item>
             <el-checkbox v-model="form.remember">记住账号</el-checkbox>
-            <el-link type="primary" class="forgot-password">忘记密码?</el-link>
           </el-form-item>
 
           <el-button
@@ -80,6 +81,9 @@
           >
             登录
           </el-button>
+          <div class="help-text">
+            如忘记密码，请联系管理员重置，联系方式为 3287456080@qq.com
+          </div>
         </el-form>
       </div>
 
@@ -91,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useLoginLogic } from './login'
 
 // 增加图片存在性兜底
@@ -104,11 +108,22 @@ const {
   rules,
   loginFormRef,
   handleLogin,
-  onSliderSuccess
+  onSliderSuccess,
+  loginFailedTick
 } = useLoginLogic()
 
 const sliderValue = ref(0)
+const handleSliderChange = (value) => {
+  onSliderSuccess(value)
+  if (value === 100) {
+    sliderValue.value = 100
+  }
+}
 
+watch(loginFailedTick, () => {
+  sliderValue.value = 0
+  sliderSuccess.value = false
+})
 // 图片加载失败兜底
 const handleImgError = (type) => {
   if (type === 'logo') logoExists.value = false
@@ -131,14 +146,35 @@ onMounted(() => {
   height: 100vh !important;
   min-height: 100vh !important;
   width: 100vw !important;
-  background: #f5f7fa !important;
+  background: linear-gradient(135deg, #eef2f7 0%, #e8f4ff 100%) !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
+  position: relative !important;
+}
+
+.login-container::before {
+  content: "" !important;
+  position: absolute !important;
+  left: calc(50% - 140px) !important;
+  top: 0 !important;
+  width: 280px !important;
+  height: 100% !important;
+  background: linear-gradient(
+    to right,
+    rgba(238, 242, 247, 0) 0%,
+    rgba(238, 242, 247, 0.35) 25%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(238, 242, 247, 0.35) 75%,
+    rgba(232, 244, 255, 0) 100%
+  ) !important;
+  filter: blur(16px) !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
 }
 
 .login-left {
-  width: 55% !important;
+  width: 50% !important;
   background: linear-gradient(135deg, #ffffff 0%, #afd8f5 100%) !important;
   display: flex !important;
   flex-direction: column !important;
@@ -157,6 +193,19 @@ onMounted(() => {
   width: 100% !important;
   height: 100% !important;
   background: linear-gradient(135deg, rgba(224, 247, 250, 0.2), rgba(178, 235, 242, 0.3)) !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+}
+
+.login-left::before {
+  content: "" !important;
+  position: absolute !important;
+  right: -110px !important;
+  top: 0 !important;
+  width: 220px !important;
+  height: 100% !important;
+  background: linear-gradient(to right, rgba(175, 216, 245, 0) 0%, rgba(232, 244, 255, 0.9) 100%) !important;
+  filter: blur(20px) !important;
   z-index: 1 !important;
   pointer-events: none !important;
 }
@@ -212,20 +261,21 @@ onMounted(() => {
 }
 
 .login-right {
-  width: 45% !important;
+  width: 50% !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  background: #fff !important;
+  background: transparent !important;
   padding: 40px !important;
   position: relative !important;
 }
 
 .login-card {
-  width: 420px !important;
+  width: 460px !important;
   padding: 50px 40px !important;
-  background: #fff !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: saturate(1.5) blur(6px) !important;
   border-radius: 12px !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
   transition: all 0.3s ease !important;
@@ -252,6 +302,7 @@ onMounted(() => {
 
 .login-form {
   width: 100% !important;
+  --el-input-bg-color: transparent !important;
 }
 
 .captcha {
@@ -261,6 +312,39 @@ onMounted(() => {
   border-radius: 8px !important;
 }
 
+/* 核心修改：输入框背景色与卡片完全统一 */
+.login-form :deep(.el-input__wrapper) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: 1px solid #e4e7ed !important;
+  border-radius: 10px !important;
+}
+
+.login-form :deep(.el-input__wrapper.is-focus),
+.login-form :deep(.el-input__wrapper:hover) {
+  background: transparent !important;
+  border-color: #409eff !important;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.12) !important;
+}
+
+.login-form :deep(.el-input__inner) {
+  background-color: transparent !important;
+}
+
+.login-form :deep(.el-input__prefix),
+.login-form :deep(.el-input__suffix) {
+  background-color: transparent !important;
+}
+
+.login-form :deep(input:-webkit-autofill),
+.login-form :deep(input:-webkit-autofill:hover),
+.login-form :deep(input:-webkit-autofill:focus) {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
 .captcha-text {
   font-size: 14px !important;
   color: #606266 !important;
@@ -268,12 +352,34 @@ onMounted(() => {
   text-align: center !important;
 }
 
+:deep(.captcha-slider .el-slider) {
+  --el-slider-height: 12px !important;
+}
+
+:deep(.captcha-slider .el-slider__runway) {
+  height: 12px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, #e6edf7 0%, #f0f5fb 100%) !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+}
+
 :deep(.captcha-slider .el-slider__bar) {
-  background-color: #409eff !important;
+  height: 12px !important;
+  border-radius: 999px !important;
+  background: linear-gradient(90deg, #409eff 0%, #67c23a 100%) !important;
+}
+
+:deep(.captcha-slider .el-slider__button-wrapper) {
+  top: -8px !important;
 }
 
 :deep(.captcha-slider .el-slider__button) {
-  border-color: #409eff !important;
+  width: 28px !important;
+  height: 28px !important;
+  border: none !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  box-shadow: 0 6px 18px rgba(64, 158, 255, 0.35) !important;
 }
 
 .login-btn {
@@ -286,10 +392,11 @@ onMounted(() => {
   border-radius: 8px !important;
 }
 
-.forgot-password {
-  float: right !important;
-  font-size: 14px !important;
-  color: #409eff !important;
+.help-text {
+  margin-top: 12px !important;
+  font-size: 13px !important;
+  color: #606266 !important;
+  text-align: center !important;
 }
 
 .copyright {

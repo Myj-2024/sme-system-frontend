@@ -8,34 +8,51 @@
       </div>
       <el-menu
           :default-active="$route.path"
-      class="layout-menu"
-      background-color="#fff"
-      text-color="#303133"
-      active-text-color="#409eff"
-      router
-      :collapse="isCollapse"
-      :collapse-transition="false"
+          class="layout-menu"
+          background-color="#fff"
+          text-color="#303133"
+          active-text-color="#409eff"
+          router
+          :collapse="isCollapse"
+          :collapse-transition="false"
       >
-      <el-menu-item index="/dashboard">
-        <el-icon><HomeFilled /></el-icon>
-        <template #title>
-          <span>首页</span>
-        </template>
-      </el-menu-item>
-      <el-sub-menu index="2">
-        <template #title>
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </template>
-        <el-menu-item index="/user/list">用户列表</el-menu-item>
-        <el-menu-item index="/user/role">角色管理</el-menu-item>
-      </el-sub-menu>
-      <el-menu-item index="/system/setting">
-        <el-icon><Setting /></el-icon>
-        <template #title>
-          <span>系统设置</span>
-        </template>
-      </el-menu-item>
+        <el-menu-item index="/dashboard">
+          <el-icon><HomeFilled /></el-icon>
+          <template #title>
+            <span>首页</span>
+          </template>
+        </el-menu-item>
+        <!-- 用户管理二级菜单 -->
+        <el-sub-menu index="user">
+          <template #title>
+            <el-icon><User /></el-icon>
+            <span>用户管理</span>
+          </template>
+          <el-menu-item index="/user/list">用户列表</el-menu-item>
+          <el-menu-item index="/user/role">角色管理</el-menu-item>
+        </el-sub-menu>
+        <!-- 部门管理菜单 -->
+        <el-sub-menu index="dept">
+          <template #title>
+            <el-icon><OfficeBuilding /></el-icon>
+            <span>部门管理</span>
+          </template>
+          <el-menu-item index="/dept/list">部门人员列表</el-menu-item>
+        </el-sub-menu>
+        <!-- 字典管理菜单 -->
+        <el-sub-menu index="dict">
+          <template #title>
+            <el-icon><Files /></el-icon>
+            <span>字典管理</span>
+          </template>
+          <el-menu-item index="/dict/list">字典列表</el-menu-item>
+        </el-sub-menu>
+        <el-menu-item index="/system/setting">
+          <el-icon><Setting /></el-icon>
+          <template #title>
+            <span>系统设置</span>
+          </template>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -44,7 +61,7 @@
       <!-- 顶部导航栏 -->
       <el-header class="layout-header">
         <div class="header-left">
-          <!-- 折叠按钮（最左侧） -->
+          <!-- 折叠按钮 -->
           <el-icon class="menu-toggle" @click="toggleSidebar">
             <Menu v-if="!isCollapse" />
             <Expand v-else />
@@ -53,7 +70,7 @@
           <el-icon class="refresh-btn" @click="handleRefresh">
             <Refresh />
           </el-icon>
-          <!-- 面包屑（优化：支持多级面包屑） -->
+          <!-- 面包屑 -->
           <el-breadcrumb separator="/" class="breadcrumb">
             <el-breadcrumb-item :to="{ path: '/dashboard' }">
               <el-icon class="breadcrumb-icon"><HomeFilled /></el-icon>
@@ -84,13 +101,28 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item>个人中心</el-dropdown-item>
+                <el-dropdown-item @click="openChangePwd">修改密码</el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
         </div>
       </el-header>
+
+      <el-dialog v-model="changePwdVisible" title="修改密码" width="420px">
+        <el-form :model="pwdForm" ref="pwdFormRef" label-width="100px" :rules="pwdRules">
+          <el-form-item label="新密码" prop="newPwd">
+            <el-input v-model="pwdForm.newPwd" type="password" autocomplete="new-password" placeholder="请输入新密码" />
+          </el-form-item>
+          <el-form-item label="确认密码" prop="confirmPwd">
+            <el-input v-model="pwdForm.confirmPwd" type="password" autocomplete="new-password" placeholder="请再次输入" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="changePwdVisible = false">取消</el-button>
+          <el-button type="primary" @click="handlePwdSubmit">确定</el-button>
+        </template>
+      </el-dialog>
 
       <!-- 页面内容区 -->
       <el-main class="layout-content">
@@ -105,8 +137,12 @@ import { ref, computed, onMounted, onErrorCaptured } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/userStore'
 import { ElMessage, ElMessageBox } from 'element-plus'
-// 新增 Refresh 图标
-import { HomeFilled, User, Setting, Menu, TrendCharts, Expand, Refresh } from '@element-plus/icons-vue'
+import userApi from '@/api/user'
+// 导入所有需要的图标（包含字典管理的Files图标）
+import {
+  HomeFilled, User, Setting, Menu, TrendCharts, Expand, Refresh,
+  OfficeBuilding, Files
+} from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -122,13 +158,64 @@ onMounted(() => {
   }
 })
 
+const changePwdVisible = ref(false)
+const pwdFormRef = ref(null)
+const pwdForm = ref({ newPwd: '', confirmPwd: '' })
+const currentUserId = ref('')
+const pwdRules = {
+  newPwd: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPwd: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== pwdForm.value.newPwd) {
+          callback(new Error('两次输入不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+const openChangePwd = () => {
+  changePwdVisible.value = true
+}
+onMounted(async () => {
+  try {
+    const res = await userApi.getCurrentUser()
+    if (res.data && res.data.id) {
+      currentUserId.value = res.data.id
+    }
+  } catch (e) {
+    console.log('获取当前用户信息失败')
+  }
+})
+const handlePwdSubmit = async () => {
+  if (!pwdFormRef.value) return
+  const valid = await pwdFormRef.value.validate()
+  if (!valid) return
+  try {
+    await userApi.updateUser(currentUserId.value, { password: pwdForm.value.newPwd })
+    ElMessage.success('密码修改成功')
+    changePwdVisible.value = false
+    pwdForm.value.newPwd = ''
+    pwdForm.value.confirmPwd = ''
+  } catch (e) {
+    ElMessage.error(e.msg || e.message || '密码修改失败')
+  }
+}
+
 // 侧边栏折叠状态
 const isCollapse = ref(false)
 const toggleSidebar = () => {
   isCollapse.value = !isCollapse.value
 }
 
-// 刷新页面功能（优化：只刷新内容区，不刷新整个页面）
+// 刷新页面功能
 const handleRefresh = () => {
   // 触发路由重新渲染
   router.replace({
@@ -138,7 +225,7 @@ const handleRefresh = () => {
   ElMessage.success('页面已刷新')
 }
 
-// 优化面包屑：支持多级导航
+// 优化面包屑：支持用户/部门/字典管理多级导航
 const breadcrumbList = computed(() => {
   const meta = route.meta
   const breadcrumb = []
@@ -163,6 +250,36 @@ const breadcrumbList = computed(() => {
         icon: 'User'
       })
     }
+  }
+  // 部门管理面包屑
+  else if (route.path.startsWith('/dept')) {
+    breadcrumb.push({
+      path: '/dept/list',
+      title: '部门管理',
+      icon: 'OfficeBuilding'
+    })
+    if (route.path === '/dept/list') {
+      breadcrumb.push({
+        path: '/dept/list',
+        title: '部门人员列表',
+        icon: 'OfficeBuilding'
+      })
+    }
+  }
+  // 字典管理面包屑
+  else if (route.path.startsWith('/dict')) {
+    breadcrumb.push({
+      path: '/dict/list',
+      title: '字典管理',
+      icon: 'Files'
+    })
+    if (route.path === '/dict/list') {
+      breadcrumb.push({
+        path: '/dict/list',
+        title: '字典列表',
+        icon: 'Files'
+      })
+    }
   } else if (route.path === '/system/setting') {
     breadcrumb.push({
       path: '/system/setting',
@@ -180,7 +297,7 @@ const breadcrumbList = computed(() => {
   return breadcrumb
 })
 
-// 退出登录（优化：增加容错）
+// 退出登录
 const handleLogout = () => {
   ElMessageBox.confirm(
       '确定要退出登录吗？',
@@ -361,7 +478,7 @@ onErrorCaptured((err) => {
   }
 }
 
-// 页面内容区（优化高度计算）
+// 页面内容区
 .layout-content {
   padding: 0;
   overflow-y: auto;

@@ -12,8 +12,18 @@
         <el-form-item label="手机号">
           <el-input v-model="searchForm.phone" placeholder="请输入手机号" clearable />
         </el-form-item>
+        <el-form-item label="部门">
+          <el-select v-model="searchForm.deptId" placeholder="请选择部门" clearable style="width: 120px">
+            <el-option
+                v-for="dept in deptList"
+                :key="dept.id"
+                :label="dept.deptName"
+                :value="dept.id.toString()"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
-          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable>
+          <el-select v-model="searchForm.status" placeholder="请选择状态" clearable style="width: 120px">
             <el-option label="启用" :value="1" />
             <el-option label="禁用" :value="0" />
           </el-select>
@@ -41,7 +51,12 @@
         <el-table-column prop="username" label="用户名" width="120" align="center"/>
         <el-table-column prop="realName" label="真实姓名" width="120" align="center"/>
         <el-table-column prop="phone" label="手机号" width="150" align="center"/>
-        <el-table-column prop="deptId" label="部门ID" width="100" align="center"/>
+        <!-- 替换部门ID为部门名称 -->
+        <el-table-column label="所属部门" width="200" align="center">
+          <template #default="{ row }">
+            {{ row.deptName || '未分配' }}
+          </template>
+        </el-table-column>
         <el-table-column prop="status" label="状态" width="180" align="center">
           <template #default="{ row }">
             <el-switch
@@ -53,7 +68,6 @@
                 @change="handleStatusChange(row)"
                 :disabled="row.id === currentUserId"
             />
-            <!-- 禁用状态提示 -->
             <el-tooltip v-if="row.id === currentUserId" content="不允许修改自身状态" placement="top">
               <i class="el-icon-info" style="margin-left: 5px; color: #909399;"></i>
             </el-tooltip>
@@ -79,7 +93,7 @@
                   @click="handleEdit(row)"
                   :disabled="row.id === currentUserId"
               >
-              编辑
+                编辑
               </el-button>
               <el-button
                   type="danger"
@@ -88,14 +102,14 @@
                   @click="handleDelete(row)"
                   :disabled="row.id === currentUserId"
               >
-              删除
+                删除
               </el-button>
             </div>
           </template>
         </el-table-column>
       </el-table>
 
-      <!-- 分页组件：基于过滤后的数据重新计算分页 -->
+      <!-- 分页组件 -->
       <el-pagination
           v-model:current-page="pageNum"
           v-model:page-size="pageSize"
@@ -120,8 +134,16 @@
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
-        <el-form-item label="部门ID" prop="deptId">
-          <el-input v-model.number="form.deptId" placeholder="请输入部门ID" />
+        <!-- 修复部门下拉框显示问题 -->
+        <el-form-item label="所属部门" prop="deptId">
+          <el-select v-model="form.deptId" placeholder="请选择所属部门" clearable>
+            <el-option
+                v-for="dept in deptList"
+                :key="dept.id"
+                :label="dept.deptName"
+                :value="dept.id"
+            />
+          </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-switch
@@ -134,8 +156,21 @@
             <i class="el-icon-info" style="margin-left: 5px; color: #909399;"></i>
           </el-tooltip>
         </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="isAdd">
-          <el-input v-model="form.password" type="password" placeholder="请输入密码" />
+        <!-- 强制显示密码字段（新增/编辑都显示） -->
+        <el-form-item
+            label="密码"
+            prop="password"
+            :rules="isAdd ? rules.password : editPasswordRules"
+        >
+          <el-input
+              v-model="form.password"
+              type="password"
+              autocomplete="new-password"
+              :placeholder="isAdd ? '请输入密码' : '不修改请留空'"
+          />
+          <div v-if="!isAdd" class="password-tip">
+            <i class="el-icon-info"></i> 留空则不修改密码
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -145,7 +180,7 @@
             @click="handleSubmit"
             :disabled="!isAdd && form.id === currentUserId"
         >
-        确定
+          确定
         </el-button>
       </template>
     </el-dialog>
@@ -156,11 +191,14 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import userApi from '@/api/user'
+import deptApi from '@/api/dept'  // 引入部门API
 
 // 缓存当前登录用户ID
 const currentUserId = ref('')
+// 部门列表
+const deptList = ref([])
 
-// 时间格式化工具函数（只显示年月日时分，去掉秒数）
+// 时间格式化工具函数
 const formatTime = (time) => {
   if (!time) return '-'
   const date = new Date(time)
@@ -173,46 +211,32 @@ const formatTime = (time) => {
   return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
-// 搜索表单
+// 搜索表单（新增部门ID筛选）
 const searchForm = reactive({
   username: '',
   realName: '',
   phone: '',
+  deptId: '',  // 新增部门ID筛选条件
   status: ''
 })
 
 // 表格数据
-const userList = ref([])  // 原始全量数据
+const userList = ref([])
 const loading = ref(false)
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(20)
 
-// ========== 核心新增：前端搜索过滤逻辑 ==========
-// 1. 计算过滤后的总条数
-const filteredTotal = computed(() => {
-  return filterUserList().length
-})
-
-// 2. 计算当前页显示的过滤后数据
-const filteredUserList = computed(() => {
-  const list = filterUserList()
-  // 分页计算：起始索引 = (当前页-1) * 页大小
-  const startIndex = (pageNum.value - 1) * pageSize.value
-  // 截取当前页数据
-  return list.slice(startIndex, startIndex + pageSize.value)
-})
-
-// 3. 核心过滤方法：根据搜索条件过滤数据
+// 过滤方法（新增部门筛选）
 const filterUserList = () => {
   if (userList.value.length === 0) return []
 
   return userList.value.filter(item => {
-    // 用户名模糊匹配（忽略大小写）
+    // 用户名模糊匹配
     if (searchForm.username && !item.username.toLowerCase().includes(searchForm.username.toLowerCase())) {
       return false
     }
-    // 真实姓名模糊匹配（忽略大小写）
+    // 真实姓名模糊匹配
     if (searchForm.realName && !item.realName.toLowerCase().includes(searchForm.realName.toLowerCase())) {
       return false
     }
@@ -220,14 +244,29 @@ const filterUserList = () => {
     if (searchForm.phone && !item.phone.includes(searchForm.phone)) {
       return false
     }
+    // 部门筛选
+    if (searchForm.deptId && item.deptId.toString() !== searchForm.deptId) {
+      return false
+    }
     // 状态精确匹配
     if (searchForm.status !== '' && item.status !== searchForm.status.toString()) {
       return false
     }
-    // 所有条件都满足
     return true
   })
 }
+
+// 计算过滤后的总条数
+const filteredTotal = computed(() => {
+  return filterUserList().length
+})
+
+// 计算当前页显示的过滤后数据
+const filteredUserList = computed(() => {
+  const list = filterUserList()
+  const startIndex = (pageNum.value - 1) * pageSize.value
+  return list.slice(startIndex, startIndex + pageSize.value)
+})
 
 // 弹窗相关
 const dialogVisible = ref(false)
@@ -257,12 +296,39 @@ const rules = {
     message: '请输入正确的手机号格式',
     trigger: 'blur'
   }],
-  deptId: [{ required: true, message: '请输入部门ID', trigger: 'blur' }],
+  deptId: [{ required: true, message: '请选择所属部门', trigger: 'change' }],
+  // 新增时密码必填
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
-// 页面加载时获取数据和当前用户信息
+// 编辑时密码非必填规则
+const editPasswordRules = [{
+  validator: (rule, value, callback) => {
+    // 留空则通过校验，有值则检查长度
+    if (value && value.length < 6) {
+      callback(new Error('密码长度不能少于6位'))
+    } else {
+      callback()
+    }
+  },
+  trigger: 'blur'
+}]
+
+// 获取部门列表
+const getDeptList = async () => {
+  try {
+    const res = await deptApi.getDeptList()
+    deptList.value = res.data || []
+  } catch (error) {
+    ElMessage.error('获取部门列表失败：' + (error.msg || error.message || '网络异常'))
+    console.error('获取部门列表错误详情：', error)
+  }
+}
+
+// 页面加载时获取数据
 onMounted(async () => {
+  // 获取部门列表
+  await getDeptList()
   // 获取当前登录用户信息
   await getCurrentUserInfo()
   // 获取用户列表
@@ -282,27 +348,24 @@ const getCurrentUserInfo = async () => {
   }
 }
 
-// 获取用户列表（获取全量数据，前端过滤）
+// 获取用户列表
 const getUserList = async () => {
   loading.value = true
   try {
-    // 先获取全量数据（pageSize设为9999，确保获取所有用户）
     const queryParams = {
       pageNum: 1,
-      pageSize: 9999,  // 关键：获取所有用户数据
-      username: '',    // 不传搜索条件，获取全量
+      pageSize: 9999,
+      username: '',
       realName: '',
       phone: '',
       status: ''
     }
 
     const res = await userApi.getUserPage(queryParams)
-
-    // 处理返回数据
     const list = res.data.list || []
     userList.value = list.map(item => ({
       ...item,
-      status: item.status.toString() // 数字转字符串，匹配switch的active-value="1"
+      status: item.status.toString()
     }))
     total.value = res.data.total || 0
   } catch (error) {
@@ -313,30 +376,30 @@ const getUserList = async () => {
   }
 }
 
-// 查询：仅触发过滤，不重新请求接口
+// 查询
 const handleSearch = () => {
-  pageNum.value = 1  // 重置页码为1
-  // 无需调用getUserList，computed会自动重新计算过滤结果
+  pageNum.value = 1
 }
 
-// 重置：清空搜索条件并重置页码
+// 重置
 const handleReset = () => {
   Object.assign(searchForm, {
     username: '',
     realName: '',
     phone: '',
+    deptId: '',  // 重置部门筛选
     status: ''
   })
   pageNum.value = 1
 }
 
-// 分页大小变化：仅重置页码，不重新请求接口
+// 分页大小变化
 const handleSizeChange = (val) => {
   pageSize.value = val
-  pageNum.value = 1  // 切换页大小时重置页码
+  pageNum.value = 1
 }
 
-// 页码变化：仅切换页码，不重新请求接口
+// 页码变化
 const handleCurrentChange = (val) => {
   pageNum.value = val
 }
@@ -351,7 +414,6 @@ const handleAdd = () => {
 
 // 编辑用户
 const handleEdit = (row) => {
-  // 如果是编辑自身，给出提示（虽然按钮已禁用，但防止手动触发）
   if (row.id === currentUserId.value) {
     ElMessage.warning('不允许编辑当前登录用户自身信息！')
     return
@@ -359,13 +421,15 @@ const handleEdit = (row) => {
 
   dialogTitle.value = '编辑用户'
   isAdd.value = false
-  Object.assign(form, JSON.parse(JSON.stringify(row)))
+  // 编辑时清空密码字段，避免回显（密码是加密存储的）
+  const formData = JSON.parse(JSON.stringify(row))
+  formData.password = ''
+  Object.assign(form, formData)
   dialogVisible.value = true
 }
 
 // 删除用户
 const handleDelete = async (row) => {
-  // 校验：禁止删除自身
   if (row.id === currentUserId.value) {
     ElMessage.warning('不允许删除当前登录用户自身！')
     return
@@ -379,7 +443,6 @@ const handleDelete = async (row) => {
     })
     await userApi.deleteUser(row.id)
     ElMessage.success('删除成功')
-    // 删除后重新获取全量数据
     getUserList()
   } catch (error) {
     if (error !== 'cancel') {
@@ -388,7 +451,7 @@ const handleDelete = async (row) => {
   }
 }
 
-// 状态切换（核心修改部分）
+// 状态切换
 const handleStatusChange = async (row) => {
   if (row.id === currentUserId.value) {
     ElMessage.warning('不允许修改当前登录用户自身的状态！')
@@ -397,22 +460,18 @@ const handleStatusChange = async (row) => {
   }
 
   try {
-    const originalStatus = row.status
     const status = parseInt(row.status)
-
     await userApi.updateUserStatus(status, row.id)
-    ElMessage.success(status === 1 ? '启用成功' : '禁用成功') // 提示语更精准
+    ElMessage.success(status === 1 ? '启用成功' : '禁用成功')
     getUserList()
   } catch (error) {
     ElMessage.error(`状态更新失败：${error.msg || error.message || '操作异常'}`)
     row.status = row.status === '1' ? '0' : '1'
-
   }
 }
 
 // 提交表单
 const handleSubmit = async () => {
-  // 校验：编辑自身时禁止提交
   if (!isAdd.value && form.id === currentUserId.value) {
     ElMessage.warning('不允许修改当前登录用户自身信息！')
     return
@@ -426,7 +485,9 @@ const handleSubmit = async () => {
       ...form,
       status: parseInt(form.status)
     }
-    if (!isAdd.value) {
+
+    // 编辑模式下：密码为空则删除该字段（不修改密码）
+    if (!isAdd.value && !submitData.password) {
       delete submitData.password
     }
 
@@ -439,7 +500,6 @@ const handleSubmit = async () => {
     }
 
     dialogVisible.value = false
-    // 新增/编辑后重新获取全量数据
     getUserList()
   } catch (error) {
     if (error.fields) {
@@ -506,7 +566,6 @@ const handleSelectionChange = (val) => {
   }
 }
 
-// 操作按钮样式
 .operation-buttons {
   display: flex;
   gap: 6px;
@@ -517,13 +576,36 @@ const handleSelectionChange = (val) => {
   }
 }
 
-// 修复fixed列边框问题
 :deep(.el-table__fixed-right) {
   border-left: 1px solid #ebeef5;
 }
 
-// 禁用状态的开关样式优化
 :deep(.el-switch.is-disabled) {
   opacity: 0.6;
+}
+
+// 密码提示样式
+.password-tip {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #909399;
+  display: flex;
+  align-items: center;
+  .el-icon-info {
+    margin-right: 4px;
+    font-size: 12px;
+  }
+}
+
+:deep(.el-dialog .el-input__inner[type="password"]) {
+  background-color: transparent !important;
+}
+:deep(.el-dialog input:-webkit-autofill),
+:deep(.el-dialog input:-webkit-autofill:hover),
+:deep(.el-dialog input:-webkit-autofill:focus) {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s !important;
 }
 </style>

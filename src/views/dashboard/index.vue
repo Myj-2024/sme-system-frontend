@@ -9,12 +9,34 @@
       <p class="login-time">本次登录时间：{{ loginTime }}</p>
       <el-button
           type="primary"
+          class="change-password-btn"
+          @click="openPwdDialog"
+          style="margin-right: 12px;"
+      >
+        修改密码
+      </el-button>
+      <el-button
+          type="primary"
           class="logout-btn"
           @click="handleLogout"
       >
         退出登录
       </el-button>
     </div>
+    <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
+      <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="pwdForm.password" type="password" autocomplete="new-password" placeholder="请输入新密码" />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirm">
+          <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password" placeholder="请再次输入新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPwd">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -23,6 +45,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/userStore'
+import userApi from '@/api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -65,6 +88,52 @@ const handleLogout = () => {
 onMounted(() => {
   loginTime.value = formatCurrentTime()
 })
+
+const pwdDialogVisible = ref(false)
+const pwdFormRef = ref(null)
+const pwdForm = ref({
+  password: '',
+  confirm: ''
+})
+const pwdRules = {
+  password: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirm: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== pwdForm.value.password) {
+          callback(new Error('两次输入不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+const openPwdDialog = () => {
+  pwdForm.value.password = ''
+  pwdForm.value.confirm = ''
+  pwdDialogVisible.value = true
+}
+
+const submitPwd = async () => {
+  if (!pwdFormRef.value) return
+  try {
+    await pwdFormRef.value.validate()
+    const id = userStore.userInfo.id
+    await userApi.updateUser(id, { password: pwdForm.value.password })
+    ElMessage.success('密码修改成功')
+    pwdDialogVisible.value = false
+  } catch (e) {
+    if (e?.fields) return
+    ElMessage.error(e?.msg || e?.message || '密码修改失败')
+  }
+}
 </script>
 
 <style scoped lang="scss">
@@ -148,6 +217,18 @@ onMounted(() => {
   &:active {
     transform: scale(0.98);
   }
+}
+
+:deep(.el-dialog .el-input__inner[type="password"]) {
+  background-color: transparent !important;
+}
+:deep(.el-dialog input:-webkit-autofill),
+:deep(.el-dialog input:-webkit-autofill:hover),
+:deep(.el-dialog input:-webkit-autofill:focus) {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 5000s ease-in-out 0s !important;
 }
 
 // 弹窗按钮样式优化

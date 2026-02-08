@@ -1,7 +1,7 @@
 // src/utils/request.js
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { useUserStore } from '@/store/userStore'
+ 
 
 const service = axios.create({
     baseURL: import.meta.env.VITE_APP_BASE_API,
@@ -11,11 +11,8 @@ const service = axios.create({
 // 请求拦截器（修复：避免在拦截器里直接使用useUserStore）
 service.interceptors.request.use(
     (config) => {
-        // 解决：拦截器里直接调用useUserStore会导致Pinia实例异常
-        const userStore = useUserStore()
-        if (userStore?.token) {
-            config.headers['Authorization'] = `Bearer ${userStore.token}`
-        }
+        const token = sessionStorage.getItem('token') || localStorage.getItem('token')
+        if (token) config.headers['Authorization'] = `Bearer ${token}`
         return config
     },
     (error) => {

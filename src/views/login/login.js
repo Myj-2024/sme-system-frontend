@@ -32,6 +32,8 @@ export function useLoginLogic() {
         ]
     })
 
+    const loginFailedTick = ref(0)
+
     // 滑块验证成功
     const onSliderSuccess = (value) => {
         if (value === 100) {
@@ -78,6 +80,7 @@ export function useLoginLogic() {
             // 错误处理
             console.error('登录失败：', error)
             sliderSuccess.value = false
+            loginFailedTick.value++
             // 仅在拦截器未提示时补充提示
             if (!error.message) {
                 ElMessage.error('登录失败，请检查账号密码或网络')
@@ -92,6 +95,7 @@ export function useLoginLogic() {
         rules,
         loginFormRef,
         handleLogin,
-        onSliderSuccess
+        onSliderSuccess,
+        loginFailedTick
     }
 }

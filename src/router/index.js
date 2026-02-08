@@ -1,10 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/layout/index.vue'
-import Login from '@/views/login/index.vue'
+const Login = () => import('@/views/login/index.vue')
 import Dashboard from '@/views/dashboard/index.vue'
 
-// 懒加载导入用户管理页面（工程化最佳实践）
+// 懒加载导入页面
 const UserList = () => import('@/views/user/index.vue')
+const DeptList = () => import('@/views/dept/index.vue')
+
+// 新增字典列表页面导入
+const DictList = () => import('@/views/dict/index.vue')
 
 const routes = [
   {
@@ -25,12 +29,25 @@ const routes = [
         component: Dashboard,
         meta: { title: '首页' }
       },
-      // 新增用户管理路由
       {
         path: 'user/list',
         name: 'UserList',
         component: UserList,
         meta: { title: '用户管理' }
+      },
+      // 部门管理路由
+      {
+        path: 'dept/list',
+        name: 'DeptList',
+        component: DeptList,
+        meta: { title: '部门管理' }
+      },
+      // 新增字典管理路由
+      {
+        path: 'dict/list',
+        name: 'DictList',
+        component: DictList,
+        meta: { title: '字典管理' }
       }
     ]
   },
@@ -46,7 +63,7 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫（保持原有逻辑）
+// 路由守卫
 router.beforeEach((to, from, next) => {
   const token = sessionStorage.getItem('token')
 
