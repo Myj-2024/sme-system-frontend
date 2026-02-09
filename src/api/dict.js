@@ -1,46 +1,61 @@
 import request from '@/utils/request'
 
-// 字典管理相关接口
-const dictApi = {
-    // 分页查询字典
-    getDictPage: (params) => request({
-        url: '/admin/dict/page',
+// 查询字典列表（分页查询）
+export function listDict(query) {
+    return request({
+        url: '/admin/dict/list',
         method: 'get',
-        params
-    }),
-    // 根据ID查询字典详情
-    getDictById: (id) => request({
-        url: `/admin/dict/${id}`,
-        method: 'get'
-    }),
-    // 新增字典
-    addDict: (data) => request({
-        url: '/admin/dict',
-        method: 'post',
-        data
-    }),
-    // 编辑字典
-    updateDict: (data) => request({
-        url: '/admin/dict',
-        method: 'put',
-        data
-    }),
-    // 删除字典
-    deleteDict: (id) => request({
-        url: `/admin/dict/${id}`,
-        method: 'delete'
-    }),
-    // 更新字典状态
-    updateDictStatus: (id, status) => request({
-        url: `/admin/dict/status/${id}`,
-        method: 'put',
-        data: { status }
-    }),
-    // 根据字典编码查询字典项
-    getDictItemByCode: (dictCode) => request({
-        url: `/admin/dict/items/${dictCode}`,
+        params: query
+    })
+}
+
+// 查询字典详细
+export function getDict(id) {
+    return request({
+        url: '/admin/dict/' + id,
         method: 'get'
     })
 }
 
-export default dictApi
+// 新增字典
+export function addDict(data) {
+    return request({
+        url: '/admin/dict',
+        method: 'post',
+        data: data
+    })
+}
+
+// 修改字典
+export function updateDict(data) {
+    return request({
+        url: '/admin/dict',
+        method: 'put',
+        data: data
+    })
+}
+
+// 删除字典
+export function delDict(ids) {
+    return request({
+        url: '/admin/dict/' + ids,
+        method: 'delete'
+    })
+}
+
+// 修改字典状态
+export function changeDictStatus(id, status) {
+    return request({
+        url: '/admin/dict/' + status,
+        method: 'put',
+        params: { id } // 这会将 id 挂在 URL 参数后：?id=xxx
+    })
+}
+
+// 获取全部字典（下拉选择）
+export function optionSelect() {
+    return request({
+        url: '/admin/dict/optionSelect',
+        method: 'get'
+    })
+}

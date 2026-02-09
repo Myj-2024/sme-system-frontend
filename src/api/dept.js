@@ -1,24 +1,30 @@
 import request from '@/utils/request'
 
-// 部门管理相关接口
-const deptApi = {
-    // 获取所有部门列表
-    getDeptList: () => request({
-        url: '/admin/dept/list',
-        method: 'get'
-    }),
-    // 分页查询部门
-    getDeptPage: (params) => request({
-        url: '/admin/dept/page',
-        method: 'get',
-        params
-    }),
-    // 新增部门
-    insertDept: (data) => request({
-        url: '/admin/dept',
-        method: 'post',
-        data
-    })
+// 列表查询
+export function listDept() {
+    return request({ url: '/admin/dept/list', method: 'get' })
 }
 
-export default deptApi
+// 新增
+export function addDept(data) {
+    return request({ url: '/admin/dept', method: 'post', data })
+}
+
+// 修改
+export function updateDept(data) {
+    return request({ url: '/admin/dept', method: 'put', data })
+}
+
+// 删除 (匹配 @DeleteMapping("/{id}"))
+export function deleteDept(id) {
+    return request({ url: `/admin/dept/${id}`, method: 'delete' })
+}
+
+// 修改状态 (匹配 @PutMapping("/{id}/status"))
+export function changeDeptStatus(id, status) {
+    return request({
+        url: `/admin/dept/${id}/status`, // 注意这里的顺序
+        method: 'put',
+        params: { status }
+    })
+}
