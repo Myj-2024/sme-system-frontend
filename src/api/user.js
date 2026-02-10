@@ -15,7 +15,6 @@ export const userApi = {
             params
         })
     },
-
     /**
      * 获取所有用户列表
      */
@@ -25,7 +24,6 @@ export const userApi = {
             method: 'get'
         })
     },
-
     /**
      * 根据ID查询用户
      */
@@ -35,7 +33,6 @@ export const userApi = {
             method: 'get'
         })
     },
-
     /**
      * 获取当前登录用户信息
      */
@@ -45,7 +42,6 @@ export const userApi = {
             method: 'get'
         })
     },
-
     /**
      * 新增用户
      */
@@ -56,7 +52,6 @@ export const userApi = {
             data
         })
     },
-
     /**
      * 编辑用户
      */
@@ -67,7 +62,6 @@ export const userApi = {
             data
         })
     },
-
     /**
      * 删除用户
      */
@@ -77,7 +71,6 @@ export const userApi = {
             method: 'delete'
         })
     },
-
     /**
      * 修改用户状态
      */
@@ -85,10 +78,9 @@ export const userApi = {
         return request({
             url: `/admin/user/status/${status}`,
             method: 'post',
-            params: { id: id }
+            params: {id: id}
         })
     },
-
     /**
      * 获取用户拥有的角色ID列表
      * @param {number} userId
@@ -99,7 +91,6 @@ export const userApi = {
             method: 'get'
         })
     },
-
     /**
      * 为用户分配角色
      * @param {number} userId
