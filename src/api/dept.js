@@ -1,8 +1,13 @@
 import request from '@/utils/request'
 
-// 列表查询
+// 列表查询（全部）
 export function listDept() {
     return request({ url: '/admin/dept/list', method: 'get' })
+}
+
+// 分页查询（带条件）
+export function pageDept(params) {
+    return request({ url: '/admin/dept/page', method: 'get', params })
 }
 
 // 新增

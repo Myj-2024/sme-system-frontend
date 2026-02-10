@@ -58,7 +58,7 @@
             </el-icon>
             <span>部门管理</span>
           </template>
-          <el-menu-item index="/dept/list">部门列表</el-menu-item>
+          <el-menu-item index="/dept/list">部门人员列表</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="dict">
