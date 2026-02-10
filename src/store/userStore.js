@@ -1,25 +1,49 @@
-// src/store/userStore.js
 import { defineStore } from 'pinia'
+import request from '@/utils/request'
 
 export const useUserStore = defineStore('user', {
     state: () => ({
-        token: sessionStorage.getItem('token') || '', // 从会话读取初始值
-        userInfo: JSON.parse(localStorage.getItem('userInfo')) || {} // 从本地存储读取
+        token: sessionStorage.getItem('token') || '',
+        userInfo: JSON.parse(localStorage.getItem('userInfo')) || {},
+        menus: [],
+        permissions: []
     }),
+
     actions: {
-        // 登录时存储用户信息（同步到会话/本地存储）
-        setUserInfo(data) {
-            this.token = data.token || ''
-            this.userInfo = data.userInfo || data || {}
-            // 同步到浏览器存储
-            sessionStorage.setItem('token', this.token)
-            localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+        setToken(token) {
+            this.token = token
+            sessionStorage.setItem('token', token)
         },
-        // 退出时清空状态
+
+        async fetchUserInfo() {
+            try {
+                // 注意：这里必须确保后端有 /admin/user/info 这个接口
+                // 且该接口返回的格式包含 { user, menus, permissions }
+                const res = await request({
+                    url: '/admin/user/info',
+                    method: 'get'
+                })
+
+                if (res.code === 200) {
+                    const { user, menus, permissions } = res.data
+                    this.userInfo = user || {}
+                    this.menus = menus || []
+                    this.permissions = permissions || []
+                    localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+                    return res.data
+                }
+                return Promise.reject(res.message)
+            } catch (error) {
+                console.error('获取用户信息失败:', error)
+                return Promise.reject(error)
+            }
+        },
+
         logout() {
             this.token = ''
             this.userInfo = {}
-            // 清空store时同步清除存储（双重保障）
+            this.menus = []
+            this.permissions = []
             sessionStorage.removeItem('token')
             localStorage.removeItem('userInfo')
         }

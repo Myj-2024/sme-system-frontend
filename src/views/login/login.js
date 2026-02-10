@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/userStore'
-// 移除不存在的 @/api/login 导入
 import service from '@/utils/request'
 
 export function useLoginLogic() {
@@ -45,7 +44,10 @@ export function useLoginLogic() {
         }
     }
 
-    // 登录核心逻辑（修复接口路径为 /admin/auth/login）
+    /**
+     * 登录核心逻辑
+     * 流程：校验 -> 获取Token -> 存Token -> 拉取用户信息(含权限/菜单) -> 跳转
+     */
     const handleLogin = async () => {
         try {
             // 1. 表单校验
@@ -56,21 +58,19 @@ export function useLoginLogic() {
             const valid = await loginFormRef.value.validate()
             if (!valid) return
 
-            // 2. 发送登录请求（使用正确的接口路径）
+            // 2. 发送登录请求
             const res = await service.post('/admin/auth/login', {
                 username: form.value.username,
                 password: form.value.password
             })
 
-            // 3. 存储用户信息到store（适配后端的realName字段）
-            userStore.setUserInfo({
-                token: res.data.token,
-                userInfo: {
-                    real_name: res.data.realName,
-                    username: res.data.username,
-                    id: res.data.id
-                }
-            })
+            // 3. 核心修复：适配你 userStore.js 中的方法名
+            // 第一步：存储 Token（这会自动写入 sessionStorage）
+            userStore.setToken(res.data.token)
+
+            // 第二步：异步拉取完整的用户信息、菜单树、按钮权限标识
+            // 这一步非常重要，它会填充 userStore 里的 menus，从而让路由和侧边栏工作
+            await userStore.fetchUserInfo()
 
             // 4. 提示+跳转首页
             ElMessage.success('登录成功！')
@@ -81,10 +81,7 @@ export function useLoginLogic() {
             console.error('登录失败：', error)
             sliderSuccess.value = false
             loginFailedTick.value++
-            // 仅在拦截器未提示时补充提示
-            if (!error.message) {
-                ElMessage.error('登录失败，请检查账号密码或网络')
-            }
+            // 错误信息通常在拦截器中已经 ElMessage.error 过了，这里仅作打印
         }
     }
 

@@ -7,13 +7,6 @@ export const userApi = {
     /**
      * 分页查询用户列表
      * @param {Object} params - 查询参数
-     * @param {number} params.pageNum - 页码
-     * @param {number} params.pageSize - 页大小
-     * @param {string} [params.username] - 用户名
-     * @param {string} [params.realName] - 真实姓名
-     * @param {string} [params.phone] - 手机号
-     * @param {number} [params.status] - 状态（0-禁用，1-启用）
-     * @returns {Promise}
      */
     getUserPage: (params) => {
         return request({
@@ -25,7 +18,6 @@ export const userApi = {
 
     /**
      * 获取所有用户列表
-     * @returns {Promise}
      */
     getAllUsers: () => {
         return request({
@@ -36,8 +28,6 @@ export const userApi = {
 
     /**
      * 根据ID查询用户
-     * @param {number} id - 用户ID
-     * @returns {Promise}
      */
     getUserById: (id) => {
         return request({
@@ -48,7 +38,6 @@ export const userApi = {
 
     /**
      * 获取当前登录用户信息
-     * @returns {Promise}
      */
     getCurrentUser: () => {
         return request({
@@ -59,8 +48,6 @@ export const userApi = {
 
     /**
      * 新增用户
-     * @param {Object} data - 用户信息
-     * @returns {Promise}
      */
     addUser: (data) => {
         return request({
@@ -72,9 +59,6 @@ export const userApi = {
 
     /**
      * 编辑用户
-     * @param {number} id - 用户ID
-     * @param {Object} data - 用户信息
-     * @returns {Promise}
      */
     updateUser: (id, data) => {
         return request({
@@ -86,8 +70,6 @@ export const userApi = {
 
     /**
      * 删除用户
-     * @param {number} id - 用户ID
-     * @returns {Promise}
      */
     deleteUser: (id) => {
         return request({
@@ -98,17 +80,38 @@ export const userApi = {
 
     /**
      * 修改用户状态
-     * @param {number} status - 状态数据 { status: 0/1 }
-     * @returns {Promise}
      */
     updateUserStatus: (status, id) => {
         return request({
-            url: `/admin/user/${ status }`,
+            url: `/admin/user/status/${status}`,
             method: 'post',
             params: { id: id }
+        })
+    },
+
+    /**
+     * 获取用户拥有的角色ID列表
+     * @param {number} userId
+     */
+    getUserRoleIds: (userId) => {
+        return request({
+            url: `/admin/user/${userId}/roles`,
+            method: 'get'
+        })
+    },
+
+    /**
+     * 为用户分配角色
+     * @param {number} userId
+     * @param {Array} roleIds
+     */
+    assignRoles: (userId, roleIds) => {
+        return request({
+            url: `/admin/user/${userId}/roles`,
+            method: 'post',
+            data: roleIds
         })
     }
 }
 
-// 导出默认对象（兼容不同导入方式）
 export default userApi

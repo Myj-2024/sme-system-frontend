@@ -212,6 +212,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.dept-container { padding: 20px; }
 .operator-wrapper { margin-bottom: 15px; }
 </style>

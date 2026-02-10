@@ -23,6 +23,7 @@
         退出登录
       </el-button>
     </div>
+
     <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
       <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
         <el-form-item label="新密码" prop="password">
@@ -41,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/store/userStore'
@@ -49,9 +50,18 @@ import userApi from '@/api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
-const userName = ref(userStore.userInfo.real_name || '管理员')
+
+/**
+ * 修复核心：使用 computed 确保响应式
+ * 并将字段名由 real_name 改为后端实际返回的 realName
+ */
+const userName = computed(() => {
+  return userStore.userInfo.realName || '管理员'
+})
+
 const loginTime = ref('')
 
+// 格式化当前时间显示
 const formatCurrentTime = () => {
   const now = new Date()
   const year = now.getFullYear()
@@ -63,6 +73,7 @@ const formatCurrentTime = () => {
   return `${year}-${month}-${day} ${hour}:${minute}:${second}`
 }
 
+// 退出登录
 const handleLogout = () => {
   ElMessageBox.confirm(
       '确定要退出登录吗？',
@@ -74,12 +85,13 @@ const handleLogout = () => {
         confirmButtonClass: 'logout-confirm-btn',
         cancelButtonClass: 'logout-cancel-btn'
       }
-  ).then(() => {
-    userStore.logout()
+  ).then(async () => {
+    await userStore.logout()
+    // 彻底清理缓存
     sessionStorage.clear()
-    localStorage.removeItem('userInfo')
+    localStorage.clear()
     ElMessage.success('退出登录成功！')
-    router.push('/login')
+    router.replace('/login')
   }).catch(() => {
     ElMessage.info('已取消退出登录')
   })
@@ -87,14 +99,23 @@ const handleLogout = () => {
 
 onMounted(() => {
   loginTime.value = formatCurrentTime()
+
+  // 关键：如果 Store 里没数据（如刷新页面），主动触发一次接口获取
+  if (!userStore.userInfo.id) {
+    userStore.fetchUserInfo().catch(err => {
+      console.error('初始化获取用户信息失败:', err)
+    })
+  }
 })
 
+// --- 修改密码逻辑 ---
 const pwdDialogVisible = ref(false)
 const pwdFormRef = ref(null)
 const pwdForm = ref({
   password: '',
   confirm: ''
 })
+
 const pwdRules = {
   password: [
     { required: true, message: '请输入新密码', trigger: 'blur' },
@@ -126,6 +147,10 @@ const submitPwd = async () => {
   try {
     await pwdFormRef.value.validate()
     const id = userStore.userInfo.id
+    if (!id) {
+      ElMessage.error('用户信息不完整，无法更新')
+      return
+    }
     await userApi.updateUser(id, { password: pwdForm.value.password })
     ElMessage.success('密码修改成功')
     pwdDialogVisible.value = false
@@ -137,11 +162,10 @@ const submitPwd = async () => {
 </script>
 
 <style scoped lang="scss">
-// 全局容器：去掉浅蓝色渐变背景，和布局保持一致
 .dashboard-wrapper {
   width: 100%;
   min-height: 100%;
-  background: transparent !important; // 改为透明，继承布局的背景
+  background: transparent !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -149,7 +173,6 @@ const submitPwd = async () => {
   box-sizing: border-box;
 }
 
-// 内容卡片（和登录页卡片风格统一）
 .content-box {
   background: #fff;
   padding: 60px 50px;
@@ -165,7 +188,6 @@ const submitPwd = async () => {
   }
 }
 
-// 用户头像（渐变背景和登录页统一）
 .avatar-container {
   margin-bottom: 24px;
 }
@@ -176,7 +198,6 @@ const submitPwd = async () => {
   border: 1px solid #f5f7fa;
 }
 
-// 欢迎标题
 .welcome-title {
   color: #303133;
   margin-bottom: 12px;
@@ -184,21 +205,18 @@ const submitPwd = async () => {
   font-weight: 600;
 }
 
-// 系统描述
 .system-desc {
   color: #606266;
   margin-bottom: 8px;
   font-size: 16px;
 }
 
-// 登录时间
 .login-time {
   color: #909399;
   margin-bottom: 36px;
   font-size: 14px;
 }
 
-// 退出按钮（和登录页按钮风格统一）
 .logout-btn {
   width: 180px;
   height: 48px;
@@ -222,16 +240,7 @@ const submitPwd = async () => {
 :deep(.el-dialog .el-input__inner[type="password"]) {
   background-color: transparent !important;
 }
-:deep(.el-dialog input:-webkit-autofill),
-:deep(.el-dialog input:-webkit-autofill:hover),
-:deep(.el-dialog input:-webkit-autofill:focus) {
-  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
-  box-shadow: 0 0 0px 1000px transparent inset !important;
-  -webkit-text-fill-color: inherit !important;
-  transition: background-color 5000s ease-in-out 0s !important;
-}
 
-// 弹窗按钮样式优化
 :deep(.logout-confirm-btn) {
   background: #409eff !important;
   border-color: #409eff !important;
