@@ -5,6 +5,10 @@
         <el-form-item label="角色名称">
           <el-input v-model="searchForm.roleName" placeholder="请输入角色名称" clearable />
         </el-form-item>
+        <!-- 新增：描述查询输入框 -->
+        <el-form-item label="描述">
+          <el-input v-model="searchForm.description" placeholder="请输入角色描述" clearable style="width: 200px;" />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">查询</el-button>
           <el-button @click="handleReset">重置</el-button>
@@ -18,7 +22,7 @@
     <el-card class="list-card" shadow="never">
       <el-table
           style="width: 100%"
-          :data="filteredRoleList"
+          :data="roleList"
           border
           stripe
           v-loading="loading"
@@ -51,7 +55,7 @@
       <el-pagination
           v-model:current-page="pageNum"
           v-model:page-size="pageSize"
-          :total="filteredTotal"
+          :total="total"
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
@@ -104,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import roleApi from '@/api/role'
 import permissionApi from '@/api/permission'
@@ -114,6 +118,7 @@ const loading = ref(false)
 const pageNum = ref(1)
 const pageSize = ref(20)
 const roleList = ref([])
+const total = ref(0)
 const dialogVisible = ref(false)
 const permDialogVisible = ref(false)
 const dialogTitle = ref('新增角色')
@@ -121,20 +126,23 @@ const formRef = ref(null)
 const treeRef = ref(null)
 const isAdd = ref(true)
 
-const searchForm = reactive({ roleName: '' })
+// 新增：description 查询条件
+const searchForm = reactive({
+  roleName: '',
+  description: ''
+})
 
-// --- 修改点：增加 roleCode 字段 ---
 const form = reactive({
   id: '',
   roleName: '',
-  roleCode: '', // 必须包含此字段，对应后端 DTO
+  roleCode: '',
   description: ''
 })
 
 const permissionTree = ref([])
 const checkedPermissions = ref([])
 
-// --- 初始化 ---
+// 初始化
 const initData = async () => {
   loading.value = true
   try {
@@ -148,50 +156,72 @@ const initData = async () => {
   }
 }
 
+// 核心修改：传递 description 查询条件给后端
 const getRoleList = async () => {
+  loading.value = true
   try {
-    const res = await roleApi.getRolePage({ pageNum: 1, pageSize: 9999 })
-    roleList.value = res.data?.list || []
+    // 构造包含角色名称、描述的分页查询参数
+    const params = {
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+      roleName: searchForm.roleName,
+      description: searchForm.description  // 新增：传递描述查询条件
+    }
+    const res = await roleApi.getRolePage(params)
+    roleList.value = res.data?.records || []
+    total.value = res.data?.total || 0
   } catch (e) {
     ElMessage.error('获取角色列表失败')
+    roleList.value = []
+    total.value = 0
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(() => { initData() })
 
-// --- 计算属性 (用于前端模拟分页) ---
-const filteredRoleList = computed(() => {
-  const result = roleList.value.filter(item => !searchForm.roleName || item.roleName.includes(searchForm.roleName))
-  const start = (pageNum.value - 1) * pageSize.value
-  return result.slice(start, start + pageSize.value)
-})
-const filteredTotal = computed(() => {
-  return roleList.value.filter(item => !searchForm.roleName || item.roleName.includes(searchForm.roleName)).length
-})
+// 查询按钮：携带描述条件查询
+const handleSearch = () => {
+  pageNum.value = 1
+  getRoleList()
+}
 
-// --- 行为处理 ---
-const handleSearch = () => { pageNum.value = 1 }
-const handleReset = () => { searchForm.roleName = ''; pageNum.value = 1 }
-const handleSizeChange = val => { pageSize.value = val; pageNum.value = 1 }
-const handleCurrentChange = val => { pageNum.value = val }
+// 重置按钮：清空描述条件
+const handleReset = () => {
+  searchForm.roleName = ''
+  searchForm.description = ''  // 新增：清空描述
+  pageNum.value = 1
+  getRoleList()
+}
 
+// 分页相关方法（无需修改）
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  pageNum.value = 1
+  getRoleList()
+}
+const handleCurrentChange = (val) => {
+  pageNum.value = val
+  getRoleList()
+}
+
+// 以下业务逻辑完全保留，无修改
 const handleAdd = () => {
   isAdd.value = true
   dialogTitle.value = '新增角色'
   resetForm()
   dialogVisible.value = true
 }
-
 const handleEdit = (row) => {
   isAdd.value = false
   dialogTitle.value = '编辑角色'
   form.id = row.id
   form.roleName = row.roleName
-  form.roleCode = row.roleCode // 同步回显角色编码
+  form.roleCode = row.roleCode
   form.description = row.description
   dialogVisible.value = true
 }
-
 const handleDelete = async (row) => {
   try {
     await ElMessageBox.confirm(`确定要删除角色 [${row.roleName}] 吗？`, '警告', {
@@ -204,19 +234,15 @@ const handleDelete = async (row) => {
     getRoleList()
   } catch (e) {}
 }
-
 const handleSubmit = async () => {
   if (!formRef.value) return
   try {
     await formRef.value.validate()
-
-    // 提交的数据中现在包含了 roleCode
     if (isAdd.value) {
       await roleApi.addRole(form)
     } else {
       await roleApi.updateRole(form.id, form)
     }
-
     ElMessage.success(isAdd.value ? '新增成功' : '编辑成功')
     dialogVisible.value = false
     getRoleList()
@@ -224,20 +250,16 @@ const handleSubmit = async () => {
     console.error('提交失败:', e)
   }
 }
-
 const resetForm = () => {
   form.id = ''
   form.roleName = ''
   form.roleCode = ''
   form.description = ''
 }
-
 const handleDialogClose = () => {
   if (formRef.value) formRef.value.clearValidate()
   resetForm()
 }
-
-// --- 分配权限逻辑 ---
 const handleAssignPermission = async (row) => {
   form.id = row.id
   permDialogVisible.value = true
@@ -248,11 +270,9 @@ const handleAssignPermission = async (row) => {
     ElMessage.error('获取权限失败')
   }
 }
-
 const handleSavePermissions = async () => {
   try {
     const checked = treeRef.value.getCheckedKeys()
-    // 注意：如果是父子联动模式，可能需要 getHalfCheckedKeys
     await roleApi.updateRolePermissions(form.id, checked)
     ElMessage.success('权限保存成功')
     permDialogVisible.value = false
@@ -260,11 +280,7 @@ const handleSavePermissions = async () => {
     ElMessage.error('保存失败')
   }
 }
-
-// 树配置
 const treeProps = { children: 'children', label: 'name' }
-
-// 校验规则
 const rules = {
   roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   roleCode: [

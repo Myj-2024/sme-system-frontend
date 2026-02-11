@@ -82,7 +82,7 @@
         <el-table-column prop="businessAddr" label="注册地址" align="center" min-width="200"/>
         <el-table-column prop="legalPerson" label="法定代表人" align="center" min-width="100"/>
         <el-table-column prop="phone" label="联系电话" align="center" min-width="120"/>
-        <el-table-column prop="regCapital" label="注册资本" align="center" min-width="100"/>
+        <el-table-column prop="regCapital" label="注册资本（万元）" align="center" min-width="100"/>
         <el-table-column prop="establishTime" label="成立时间" align="center" min-width="120">
           <template #default="{ row }">
             {{ row.establishTime ? formatDate(row.establishTime) : '-' }}
@@ -96,6 +96,12 @@
         <el-table-column prop="industryId" label="所属行业" align="center" min-width="100">
           <template #default="{ row }">
             {{ getDictLabel(industryOptions, row.industryId) || '-' }}
+          </template>
+        </el-table-column>
+        <!-- 新增：主要产品列（位于所属行业后） -->
+        <el-table-column prop="mainProduct" label="主要产品" align="center" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.mainProduct || '-' }}
           </template>
         </el-table-column>
         <el-table-column prop="businessStatus" label="经营状态" align="center" min-width="100">
@@ -168,7 +174,7 @@
         <el-form-item label="联系电话" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入联系电话"/>
         </el-form-item>
-        <el-form-item label="注册资本" prop="regCapital">
+        <el-form-item label="注册资本（万元）" prop="regCapital">
           <el-input v-model="form.regCapital" placeholder="请输入注册资本"/>
         </el-form-item>
         <el-form-item label="成立时间" prop="establishTime">
@@ -204,6 +210,16 @@
                 :value="item.itemCode"
             />
           </el-select>
+        </el-form-item>
+        <!-- 新增：主要产品表单项（位于所属行业下方） -->
+        <el-form-item label="主要产品" prop="mainProduct">
+          <el-input
+              v-model="form.mainProduct"
+              placeholder="请输入主要产品"
+              type="textarea"
+              :rows="3"
+              style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="经营状态" prop="businessStatus">
           <el-select
@@ -268,7 +284,7 @@ const searchForm = reactive({
   businessStatus: ''
 })
 
-// 新增/修改表单
+// 新增/修改表单（新增mainProduct字段）
 const form = reactive({
   id: undefined,
   enterpriseName: '',
@@ -281,10 +297,11 @@ const form = reactive({
   establishTime: '',
   townId: '',
   industryId: '',
+  mainProduct: '', // 新增：主要产品字段
   businessStatus: 'NORMAL' // 默认正常经营
 })
 
-// 表单校验规则
+// 表单校验规则（新增mainProduct非必填，可根据需求调整）
 const rules = {
   enterpriseName: [{required: true, message: '请输入企业名称', trigger: 'blur'}],
   creditCode: [{required: true, message: '请输入统一社会信用代码', trigger: 'blur'}],
@@ -293,7 +310,8 @@ const rules = {
   enterpriseType: [{required: true, message: '请选择企业类型', trigger: 'change'}],
   townId: [{required: true, message: '请选择所属乡镇', trigger: 'change'}],
   industryId: [{required: true, message: '请选择所属行业', trigger: 'change'}],
-  businessStatus: [{required: true, message: '请选择经营状态', trigger: 'change'}]
+  businessStatus: [{required: true, message: '请选择经营状态', trigger: 'change'}],
+  mainProduct: [{required: false, message: '请输入主要产品', trigger: 'blur'}] // 非必填，可改为required: true
 }
 
 // 获取字典项数据
@@ -417,7 +435,7 @@ const handleEdit = async (row) => {
   try {
     const res = await getEnterpriseById(row.id)
     const enterpriseData = res.data || res
-    Object.assign(form, enterpriseData)
+    Object.assign(form, enterpriseData) // 自动赋值mainProduct字段
     dialogTitle.value = '修改企业'
     dialogVisible.value = true
   } catch (e) {
@@ -463,7 +481,7 @@ const resetSearch = () => {
   getList()
 }
 
-// 重置表单
+// 重置表单（新增mainProduct重置）
 const resetForm = () => {
   Object.assign(form, {
     id: undefined,
@@ -477,6 +495,7 @@ const resetForm = () => {
     establishTime: '',
     townId: '',
     industryId: '',
+    mainProduct: '', // 重置主要产品
     businessStatus: 'NORMAL'
   })
   if (enterpriseFormRef.value) {
