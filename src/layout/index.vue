@@ -31,6 +31,17 @@
           <el-menu-item index="/enterprise/list">企业列表</el-menu-item>
         </el-sub-menu>
 
+        <!-- 新增：包抓联管理子菜单 -->
+        <el-sub-menu index="smeple">
+          <template #title>
+            <el-icon>
+              <UserFilled/> <!-- 使用用户图标，可根据需求替换 -->
+            </el-icon>
+            <span>包抓联管理</span>
+          </template>
+          <el-menu-item index="/smeple/list">包抓联列表</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="user">
           <template #title>
             <el-icon>
@@ -80,7 +91,7 @@
       </el-menu>
     </el-aside>
 
-    <!-- 主体 -->
+    <!-- 主体部分（无修改） -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
@@ -94,7 +105,9 @@
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
               <el-breadcrumb-item to="/dashboard">
-                <el-icon><HomeFilled /></el-icon>
+                <el-icon>
+                  <HomeFilled/>
+                </el-icon>
                 <span>首页</span>
               </el-breadcrumb-item>
               <el-breadcrumb-item
@@ -151,10 +164,12 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-// 面包屑层级数据
+// 面包屑层级数据（新增包抓联管理的面包屑）
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
+  // 新增：包抓联管理面包屑
+  if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
   if (p.startsWith('/user')) return [{title: '用户管理', path: '/user/list'}]
   if (p.startsWith('/role')) return [{title: '系统管理', path: '/role/list'}]
   if (p.startsWith('/dept')) return [{title: '系统管理', path: '/dept/list'}]
@@ -162,10 +177,12 @@ const breadcrumbList = computed(() => {
   return []
 })
 
-// 当前页面标题（用于最后一级面包屑）
+// 当前页面标题（新增包抓联管理的标题）
 const currentPageTitle = computed(() => {
   const p = route.path
   if (p === '/enterprise/list') return '企业列表'
+  // 新增：包抓联列表标题
+  if (p === '/smeple/list') return '包抓联列表'
   if (p === '/user/list') return '用户列表'
   if (p === '/role/list') return '角色管理'
   if (p === '/dept/list') return '部门管理'
@@ -181,6 +198,7 @@ const logout = () => {
 </script>
 
 <style scoped>
+/* 样式无修改，复用原有样式 */
 .admin-layout {
   display: flex;
   height: 100vh;
@@ -219,28 +237,24 @@ const logout = () => {
   padding: 0 20px;
 }
 
-/* 核心修改：让按钮和面包屑在同一行 */
 .header-left {
   display: flex;
   align-items: center;
   width: 100%;
 }
 
-/* 折叠按钮样式 */
 .menu-toggle {
   cursor: pointer;
   font-size: 20px;
   color: #606266;
   margin-right: 16px;
-  flex-shrink: 0; /* 防止按钮被压缩 */
+  flex-shrink: 0;
 }
 
-/* 面包屑容器样式 */
 .breadcrumb-wrapper {
-  flex: 1; /* 让面包屑占满剩余空间 */
+  flex: 1;
 }
 
-/* 面包屑美化样式 */
 .custom-breadcrumb {
   font-size: 14px;
   color: #606266;
