@@ -55,7 +55,7 @@ export function addSmePle(data) {
  */
 export function updateSmePle(data) {
     return request({
-        url: '/admin/smeple',   // ← 修改这里
+        url: '/admin/smeple',
         method: 'put',
         data
     })
@@ -70,5 +70,29 @@ export function deleteSmePle(id) {
     return request({
         url: `/admin/smeple/${id}`,
         method: 'delete'
+    })
+}
+
+/**
+ * 检查企业是否被包抓联引用
+ * @param {number} enterpriseId - 企业ID
+ * @returns {Promise}
+ */
+export function checkEnterpriseBind(enterpriseId) {
+    return request({
+        url: `/admin/smeple/check/enterprise/${enterpriseId}`,
+        method: 'get'
+    })
+}
+
+/**
+ * 检查部门是否被包抓联引用
+ * @param {number} deptId - 部门ID
+ * @returns {Promise}
+ */
+export function checkDeptBind(deptId) {
+    return request({
+        url: `/admin/smeple/check/dept/${deptId}`,
+        method: 'get'
     })
 }

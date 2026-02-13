@@ -31,15 +31,16 @@
           <el-menu-item index="/enterprise/list">企业列表</el-menu-item>
         </el-sub-menu>
 
-        <!-- 新增：包抓联管理子菜单 -->
+        <!-- 包抓联管理子菜单（新增问题办理子项） -->
         <el-sub-menu index="smeple">
           <template #title>
             <el-icon>
-              <UserFilled/> <!-- 使用用户图标，可根据需求替换 -->
+              <UserFilled/>
             </el-icon>
             <span>包抓联管理</span>
           </template>
           <el-menu-item index="/smeple/list">包抓联列表</el-menu-item>
+          <el-menu-item index="/smeple/handle">问题办理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="user">
@@ -164,12 +165,17 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-// 面包屑层级数据（新增包抓联管理的面包屑）
+// 面包屑层级数据（新增问题办理面包屑）
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
-  // 新增：包抓联管理面包屑
-  if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
+  // 包抓联管理面包屑（包含列表和问题办理）
+  if (p.startsWith('/smeple')) {
+    if (p === '/smeple/handle') {
+      return [{title: '包抓联管理', path: '/smeple/list'}]
+    }
+    return [{title: '包抓联管理', path: '/smeple/list'}]
+  }
   if (p.startsWith('/user')) return [{title: '用户管理', path: '/user/list'}]
   if (p.startsWith('/role')) return [{title: '系统管理', path: '/role/list'}]
   if (p.startsWith('/dept')) return [{title: '系统管理', path: '/dept/list'}]
@@ -177,12 +183,12 @@ const breadcrumbList = computed(() => {
   return []
 })
 
-// 当前页面标题（新增包抓联管理的标题）
+// 当前页面标题（新增问题办理标题）
 const currentPageTitle = computed(() => {
   const p = route.path
   if (p === '/enterprise/list') return '企业列表'
-  // 新增：包抓联列表标题
   if (p === '/smeple/list') return '包抓联列表'
+  if (p === '/smeple/handle') return '问题办理'
   if (p === '/user/list') return '用户列表'
   if (p === '/role/list') return '角色管理'
   if (p === '/dept/list') return '部门管理'

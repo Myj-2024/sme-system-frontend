@@ -256,6 +256,7 @@ import {
   deleteEnterprise,
   changeEnterpriseStatus
 } from '@/api/enterprise'
+import { checkEnterpriseBind } from '@/api/smePle'
 
 // 分页相关
 const pageNum = ref(1)          // 当前页码
@@ -456,9 +457,15 @@ const handleDelete = (row) => {
       }
   ).then(async () => {
     try {
+      // 检查企业是否被包抓联引用
+      const checkRes = await checkEnterpriseBind(row.id)
+      if (checkRes.data?.hasBind) {
+        ElMessage.error('该企业已被包抓联关联，无法删除！')
+        return
+      }
       await deleteEnterprise(row.id)
       ElMessage.success('删除企业成功')
-      getList() // 删除后刷新列表
+      getList()
     } catch (e) {
       console.error("删除企业失败:", e)
       ElMessage.error('删除企业失败')

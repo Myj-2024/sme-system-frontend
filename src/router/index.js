@@ -22,12 +22,19 @@ const routes = [
                 component: () => import('@/views/enterprise/index.vue'),
                 meta: {title: '企业管理'}
             },
-            // 新增：包抓联管理路由
+            // 原有包抓联列表路由
             {
                 path: 'smeple/list',
                 name: 'SmePleList',
                 component: () => import('@/views/smePle/index.vue'),
                 meta: {title: '包抓联管理'}
+            },
+            // 新增：问题办理路由（包抓联管理二级页面）
+            {
+                path: 'smeple/handle',
+                name: 'SmePleHandle',
+                component: () => import('@/views/smePle/handle/index.vue'),
+                meta: {title: '问题办理', activeMenu: '/smeple/list'}
             },
             // 原有其他路由
             {

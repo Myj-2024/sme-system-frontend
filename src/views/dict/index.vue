@@ -32,10 +32,14 @@
       </el-form>
     </el-card>
 
-    <el-table :data="dictList" border v-loading="loading">
-      <el-table-column label="字典名称" prop="dictName" />
-      <el-table-column label="字典编码" prop="dictCode" />
-      <el-table-column label="状态">
+    <el-table :data="dictList" border v-loading="loading" style="width: 100%">
+      <!-- 新增字典ID列 -->
+      <el-table-column label="字典ID" prop="id" width="80" align="center"/>
+      <el-table-column label="字典名称" prop="dictName" align="center"/>
+      <el-table-column label="字典编码" prop="dictCode" align="center"/>
+      <!-- 新增排序列 -->
+      <el-table-column label="排序" prop="sort" width="150" align="center" />
+      <el-table-column label="状态" align="center"  width="150">
         <template #default="scope">
           <el-switch
               v-model="scope.row.status"
@@ -45,7 +49,7 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260">
+      <el-table-column label="操作" width="260" align="center">
         <template #default="scope">
           <el-button link type="primary" @click="handleUpdate(scope.row)">修改</el-button>
           <el-button link type="success" @click="handleViewItem(scope.row)">字典项</el-button>

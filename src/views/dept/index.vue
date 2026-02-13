@@ -1,52 +1,52 @@
 <template>
   <div class="dept-container">
     <el-card class="filter-card" shadow="never">
-        <el-form :model="queryForm" inline style="margin-left: 20px">
-          <el-form-item label="部门名称">
-            <el-input
-                v-model="queryForm.deptName"
-                placeholder="请输入部门名称"
-                clearable
-                style="width: 200px"
-            />
-          </el-form-item>
-          <el-form-item label="负责人">
-            <el-input
-                v-model="queryForm.leader"
-                placeholder="请输入负责人"
-                clearable
-                style="width: 200px"
-            />
-          </el-form-item>
-          <el-form-item label="职务">
-            <el-input
-                v-model="queryForm.position"
-                placeholder="请输入职务"
-                clearable
-                style="width: 200px"
-            />
-          </el-form-item>
-          <el-form-item label="状态">
-            <el-select
-                v-model="queryForm.status"
-                placeholder="请选择状态"
-                clearable
-                style="width: 150px"
-            >
-              <el-option label="启用" value="1" />
-              <el-option label="停用" value="0" />
-            </el-select>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Search" @click="getList">查询</el-button>
-            <el-button icon="Refresh" @click="resetQuery">重置</el-button>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" icon="Plus" @click="handleAdd">新增部门</el-button>
-          </el-form-item>
-        </el-form>
+      <el-form :model="queryForm" inline style="margin-left: 20px">
+        <el-form-item label="部门名称">
+          <el-input
+              v-model="queryForm.deptName"
+              placeholder="请输入部门名称"
+              clearable
+              style="width: 200px"
+          />
+        </el-form-item>
+        <el-form-item label="负责人">
+          <el-input
+              v-model="queryForm.leader"
+              placeholder="请输入负责人"
+              clearable
+              style="width: 200px"
+          />
+        </el-form-item>
+        <el-form-item label="职务">
+          <el-input
+              v-model="queryForm.position"
+              placeholder="请输入职务"
+              clearable
+              style="width: 200px"
+          />
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select
+              v-model="queryForm.status"
+              placeholder="请选择状态"
+              clearable
+              style="width: 150px"
+          >
+            <el-option label="启用" value="1" />
+            <el-option label="停用" value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Search" @click="getList">查询</el-button>
+          <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" icon="Plus" @click="handleAdd">新增部门</el-button>
+        </el-form-item>
+      </el-form>
     </el-card>
-        <el-card shadow="never">
+    <el-card shadow="never">
       <el-table :data="deptList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px">
         <el-table-column prop="deptCode" label="部门编码" align="center" width="150" />
         <el-table-column prop="deptName" label="部门名称" align="center" />
@@ -140,6 +140,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 import { listDept, addDept, updateDept, deleteDept, changeDeptStatus, pageDept } from '@/api/dept'
+import { checkDeptBind } from '@/api/smePle'
 
 const loading = ref(false)
 const deptList = ref([])
@@ -266,9 +267,20 @@ const handleDelete = (row) => {
   ElMessageBox.confirm(`确定要删除部门 "${row.deptName}" 下的 "${row.leader}" 记录吗？`, '警告', {
     type: 'warning'
   }).then(async () => {
-    await deleteDept(row.id)
-    ElMessage.success('删除成功')
-    getList()
+    try {
+      // 检查部门是否被包抓联引用
+      const checkRes = await checkDeptBind(row.id)
+      if (checkRes.data?.hasBind) {
+        ElMessage.error('该部门已被包抓联关联，无法删除！')
+        return
+      }
+      await deleteDept(row.id)
+      ElMessage.success('删除成功')
+      getList()
+    } catch (e) {
+      console.error("删除失败:", e)
+      ElMessage.error('删除失败，请重试')
+    }
   }).catch(() => {})
 }
 
