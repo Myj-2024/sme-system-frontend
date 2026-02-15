@@ -46,6 +46,13 @@ const routes = [
                     activeMenu: '/smeple/list'
                 }
             },
+            // 新增：政策发布列表路由
+            {
+                path: 'policy/list',
+                name: 'PolicyList',
+                component: () => import('@/views/policy/index.vue'),
+                meta: {title: '政策发布管理'}
+            },
             // 原有其他路由
             {
                 path: 'user/list',

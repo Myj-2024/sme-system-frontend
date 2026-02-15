@@ -43,6 +43,17 @@
           <el-menu-item index="/smeple/handle">问题办理</el-menu-item>
         </el-sub-menu>
 
+        <!-- 新增：政策发布管理子菜单 -->
+        <el-sub-menu index="policy">
+          <template #title>
+            <el-icon>
+              <Document/>
+            </el-icon>
+            <span>政策发布管理</span>
+          </template>
+          <el-menu-item index="/policy/list">政策发布列表</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="user">
           <template #title>
             <el-icon>
@@ -153,7 +164,7 @@ import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
 import {
   HomeFilled, User, UserFilled, Setting,
-  Menu, Expand, OfficeBuilding, Files, Fold
+  Menu, Expand, OfficeBuilding, Files, Fold, Document
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -165,7 +176,7 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-// 面包屑层级数据（新增问题办理面包屑）
+// 面包屑层级数据（新增政策发布面包屑）
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
@@ -176,6 +187,8 @@ const breadcrumbList = computed(() => {
     }
     return [{title: '包抓联管理', path: '/smeple/list'}]
   }
+  // 新增：政策发布管理面包屑
+  if (p.startsWith('/policy')) return [{title: '政策发布管理', path: '/policy/list'}]
   if (p.startsWith('/user')) return [{title: '用户管理', path: '/user/list'}]
   if (p.startsWith('/role')) return [{title: '系统管理', path: '/role/list'}]
   if (p.startsWith('/dept')) return [{title: '系统管理', path: '/dept/list'}]
@@ -183,12 +196,14 @@ const breadcrumbList = computed(() => {
   return []
 })
 
-// 当前页面标题（新增问题办理标题）
+// 当前页面标题（新增政策发布标题）
 const currentPageTitle = computed(() => {
   const p = route.path
   if (p === '/enterprise/list') return '企业列表'
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
+  // 新增：政策发布列表标题
+  if (p === '/policy/list') return '政策发布列表'
   if (p === '/user/list') return '用户列表'
   if (p === '/role/list') return '角色管理'
   if (p === '/dept/list') return '部门管理'

@@ -12,8 +12,8 @@
           <el-input v-model="searchForm.phone" placeholder="请输入手机号" clearable/>
         </el-form-item>
         <el-form-item label="部门">
-          <el-select v-model="searchForm.deptId" placeholder="请选择部门" clearable style="width: 150px">
-            <el-option v-for="dept in deptList" :key="dept.id" :label="dept.deptName" :value="dept.id"/>
+          <el-select v-model="searchForm.deptCode" placeholder="请选择部门" clearable style="width: 150px">
+            <el-option v-for="dept in deptList" :key="dept.itemCode" :label="dept.itemName" :value="dept.itemCode"/>
           </el-select>
         </el-form-item>
         <el-form-item label="状态">
@@ -32,7 +32,7 @@
             新增用户
           </el-button>
         </el-form-item>
-      </el-form>
+      </el-form> <!-- 修复：补充el-form闭合标签 -->
     </el-card>
 
     <el-card class="list-card" shadow="never">
@@ -44,8 +44,8 @@
         <el-table-column prop="phone" label="手机号" width="150" align="center"/>
         <el-table-column label="所属部门" width="150" align="center">
           <template #default="{ row }">
-            <el-tag :type="getDeptName(row.deptId) === '未分配' ? 'info' : ''">
-              {{ getDeptName(row.deptId) }}
+            <el-tag :type="getDeptName(row.deptCode) === '未分配' ? 'info' : ''">
+              {{ getDeptName(row.deptCode) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -105,9 +105,9 @@
         <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号"/>
         </el-form-item>
-        <el-form-item label="所属部门" prop="deptId">
-          <el-select v-model="form.deptId" placeholder="请选择所属部门" clearable>
-            <el-option v-for="dept in deptList" :key="dept.id" :label="dept.deptName" :value="dept.id"/>
+        <el-form-item label="所属部门" prop="deptCode">
+          <el-select v-model="form.deptCode" placeholder="请选择所属部门" clearable>
+            <el-option v-for="dept in deptList" :key="dept.itemCode" :label="dept.itemName" :value="dept.itemCode"/>
           </el-select>
         </el-form-item>
         <el-form-item label="状态" prop="status">
@@ -117,7 +117,7 @@
           <el-input v-model="form.password" type="password" show-password autocomplete="new-password"
                     :placeholder="isAdd ? '请输入密码' : '不修改请留空'"/>
         </el-form-item>
-      </el-form>
+      </el-form> <!-- 确保el-form正确闭合 -->
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="handleSubmit">确定</el-button>
@@ -149,17 +149,17 @@
 import {ref, reactive, onMounted, computed} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import userApi from '@/api/user'
-import {listDept} from '@/api/dept'
-import {roleApi} from '@/api/role' // 请确保有此 API 文件或定义
+import { selectItemList } from '@/api/dictItem'
+import {roleApi} from '@/api/role'
 import {Edit, Delete, Plus, UserFilled} from '@element-plus/icons-vue'
 
 const currentUserId = ref('')
-const deptList = ref([])
+const deptList = ref([])  // 存储部门字典项：{itemCode, itemName, ...}
 const userList = ref([])
 const loading = ref(false)
 const pageNum = ref(1)
 const pageSize = ref(20)
-const total = ref(0) // 新增：总记录数
+const total = ref(0)
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增用户')
 const isAdd = ref(true)
@@ -176,20 +176,22 @@ const roleDialog = reactive({
   allRoles: []
 })
 
+// 搜索表单：deptId → deptCode
 const searchForm = reactive({
   username: '',
   realName: '',
   phone: '',
-  deptId: '',
+  deptCode: '',
   status: ''
 })
 
+// 表单数据：deptId → deptCode
 const form = reactive({
   id: '',
   username: '',
   realName: '',
   phone: '',
-  deptId: '',
+  deptCode: '',
   status: '1',
   password: ''
 })
@@ -201,18 +203,26 @@ const formatTime = (time) => {
   return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
-const getDeptName = (deptId) => {
-  if (!deptId) return '未分配'
-  const dept = deptList.value.find(d => d.id === deptId || d.id === Number(deptId))
-  return dept ? dept.deptName : '未分配'
+// 修改：根据部门编码获取部门名称
+const getDeptName = (deptCode) => {
+  if (!deptCode) return '未分配'
+  const dept = deptList.value.find(d => d.itemCode === deptCode)
+  return dept ? dept.itemName : '未分配'
 }
 
 // --- 数据获取 ---
 const initData = async () => {
   loading.value = true
   try {
-    const deptRes = await listDept()
-    deptList.value = deptRes.data || []
+    // 获取部门字典项（dict_id=10 是部门类型字典）
+    const deptRes = await selectItemList({
+      dictId: 10,        // 部门类型字典的ID（根据你的字典主表确认）
+      pageNum: 1,
+      pageSize: 999,     // 一次性获取所有部门
+      status: 1          // 只获取启用状态的部门
+    })
+    deptList.value = deptRes.data?.records || []
+
     const userRes = await userApi.getCurrentUser()
     currentUserId.value = userRes.data?.id || ''
     await getUserList()
@@ -226,7 +236,7 @@ const initData = async () => {
 const getUserList = async () => {
   loading.value = true
   try {
-    // 构造分页查询参数
+    // 构造分页查询参数：deptId → deptCode
     const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
@@ -234,10 +244,9 @@ const getUserList = async () => {
       realName: searchForm.realName,
       phone: searchForm.phone,
       status: searchForm.status ? parseInt(searchForm.status) : undefined,
-      deptId: searchForm.deptId ? (typeof searchForm.deptId === 'string' ? parseInt(searchForm.deptId) : searchForm.deptId) : undefined // 新增：传递部门ID
+      deptCode: searchForm.deptCode || undefined  // 按部门编码查询
     }
     const res = await userApi.getUserPage(params)
-    // 适配后端返回的PageResult结构
     userList.value = res.data?.records || []
     total.value = res.data?.total || 0
     // 转换状态为字符串，适配前端el-switch
@@ -256,24 +265,24 @@ onMounted(() => {
 // --- 行为处理 ---
 const handleSearch = () => {
   pageNum.value = 1
-  getUserList() // 查询时重新调用后端接口
+  getUserList()
 }
 
 const handleReset = () => {
-  Object.assign(searchForm, {username: '', realName: '', phone: '', deptId: '', status: ''})
+  Object.assign(searchForm, {username: '', realName: '', phone: '', deptCode: '', status: ''})
   pageNum.value = 1
-  getUserList() // 重置后重新调用后端接口
+  getUserList()
 }
 
 const handleSizeChange = val => {
   pageSize.value = val
   pageNum.value = 1
-  getUserList() // 页大小变化时重新调用后端接口
+  getUserList()
 }
 
 const handleCurrentChange = val => {
   pageNum.value = val
-  getUserList() // 页码变化时重新调用后端接口
+  getUserList()
 }
 
 const handleAdd = () => {
@@ -299,11 +308,8 @@ const handleRole = async (row) => {
   roleDialog.loading = true
   roleDialog.selectedRoleIds = []
   try {
-    // 1. 获取所有可选角色（假设你有一个 roleApi.getAllRoles 方法）
-    // 如果没有，可以临时用 listRole() 代替，具体看你 roleApi 的定义
     const allRolesRes = await roleApi.getAllRoles()
     roleDialog.allRoles = allRolesRes.data || []
-    // 2. 获取该用户当前拥有的角色ID
     const userRoleIdsRes = await userApi.getUserRoleIds(row.id)
     roleDialog.selectedRoleIds = userRoleIdsRes.data || []
   } catch (e) {
@@ -332,16 +338,14 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm('确定要删除该用户吗？', '警告', {type: 'warning'})
     await userApi.deleteUser(row.id)
     ElMessage.success('删除成功')
-    getUserList() // 删除后重新获取列表
-  } catch (e) {
-  }
+    getUserList()
+  } catch (e) {}
 }
 
 const handleStatusChange = async (row) => {
   try {
     await userApi.updateUserStatus(parseInt(row.status), row.id)
     ElMessage.success('状态更新成功')
-    // 状态修改后重新获取列表，保证数据一致性
     getUserList()
   } catch (e) {
     row.status = row.status === '1' ? '0' : '1'
@@ -359,14 +363,14 @@ const handleSubmit = async () => {
     else await userApi.updateUser(form.id, data)
     ElMessage.success(isAdd.value ? '新增成功' : '编辑成功')
     dialogVisible.value = false
-    getUserList() // 提交后重新获取列表
+    getUserList()
   } catch (e) {
     console.error(e)
   }
 }
 
 const resetForm = () => {
-  Object.assign(form, {id: '', username: '', realName: '', phone: '', deptId: '', status: '1', password: ''})
+  Object.assign(form, {id: '', username: '', realName: '', phone: '', deptCode: '', status: '1', password: ''})
   formRef.value?.resetFields()
 }
 
@@ -374,11 +378,11 @@ const handleDialogClose = () => {
   resetForm()
 }
 
-// --- 校验 ---
+// --- 校验规则：deptId → deptCode ---
 const rules = {
   username: [{required: true, message: '请输入用户名', trigger: 'blur'}],
   realName: [{required: true, message: '请输入真实姓名', trigger: 'blur'}],
-  deptId: [{required: true, message: '请选择部门', trigger: 'change'}],
+  deptCode: [{required: true, message: '请选择部门', trigger: 'change'}],
   password: [{required: true, message: '请输入密码', trigger: 'blur'}, {
     min: 6,
     message: '密码至少6位',
