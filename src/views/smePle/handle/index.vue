@@ -3,12 +3,13 @@
     <!-- 筛选卡片 -->
     <el-card class="filter-card" shadow="never">
       <el-form :model="searchForm" inline @submit.prevent="getList">
-        <el-form-item label="流程状态" style="width: 200px">
-          <el-select v-model="searchForm.processStatus" placeholder="请选择流程状态" clearable>
-            <el-option label="未受理" value="UNHANDLED"></el-option>
-            <el-option label="办理中" value="HANDLING"></el-option>
-            <el-option label="已办结" value="COMPLETED"></el-option>
-            <el-option label="无法办理" value="UNABLE"></el-option>
+        <el-form-item label="办理状态" style="width: 200px">
+          <el-select v-model="searchForm.processStatus" placeholder="请选择办理状态" clearable>
+            <el-option label="受理中" value="HANDLING"></el-option>
+            <el-option label="办理中" value="PROCESSING"></el-option>
+            <el-option label="办结中" value="FINISHING"></el-option>
+            <el-option label="完全办结" value="COMPLETED"></el-option>
+            <el-option label="暂无法办结" value="UNABLE"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="包抓领导">
@@ -36,6 +37,13 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="getList">查询</el-button>
           <el-button icon="Refresh" @click="resetSearch">重置</el-button>
+          <el-button
+              type="primary"
+              icon="Plus"
+              @click="handleAddPackageContact"
+          >
+            新增包抓联问题
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -54,27 +62,27 @@
         <el-table-column
             label="序号"
             align="center"
-            width="80"
+            width="60"
             type="index"
             :index="(index) => (pageNum - 1) * pageSize + index + 1"
         />
-        <!-- 包抓联编号 -->
+        <!-- 问题编号 -->
         <el-table-column
             prop="packageNo"
-            label="包抓联编号"
+            label="问题编号"
             align="center"
-            min-width="150"
+            width="110"
         >
           <template #default="{ row }">
             {{ row.packageNo || '-' }}
           </template>
         </el-table-column>
-        <!-- 包联企业反映的问题（修改为点击弹窗查看全部） -->
+        <!-- 包联企业反映的问题（点击弹窗查看全部） -->
         <el-table-column
             prop="enterpriseProblem"
-            label="包联企业反映的问题"
+            label="企业反映的问题"
             align="center"
-            min-width="200"
+            min-width="170"
         >
           <template #default="{ row }">
             <div
@@ -116,7 +124,7 @@
             prop="enterpriseLeader"
             label="企业负责人"
             align="center"
-            min-width="100"
+            min-width="90"
         >
           <template #default="{ row }">
             {{ row.enterpriseLeader || '-' }}
@@ -127,7 +135,7 @@
             prop="enterprisePhone"
             label="企业联系电话"
             align="center"
-            min-width="120"
+            min-width="110"
         >
           <template #default="{ row }">
             {{ row.enterprisePhone || '-' }}
@@ -138,7 +146,7 @@
             prop="classDeptName"
             label="专班负责单位"
             align="center"
-            min-width="150"
+            min-width="110"
         >
           <template #default="{ row }">
             {{ row.classDeptName || '-' }}
@@ -149,7 +157,7 @@
             prop="classMonitor"
             label="专班班长"
             align="center"
-            min-width="100"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.classMonitor || '-' }}
@@ -158,9 +166,9 @@
         <!-- 专班班长联系电话 -->
         <el-table-column
             prop="classPhone"
-            label="专班班长联系电话"
+            label="班长联系电话"
             align="center"
-            min-width="120"
+            min-width="110"
         >
           <template #default="{ row }">
             {{ row.classPhone || '-' }}
@@ -179,26 +187,62 @@
             </el-tag>
           </template>
         </el-table-column>
-        <!-- 流程状态 -->
+        <!-- 办理状态（添加点击事件） -->
         <el-table-column
             prop="processStatus"
-            label="流程状态"
+            label="办理状态"
             align="center"
-            min-width="100"
+            width="105"
         >
           <template #default="{ row }">
-            <el-tag v-if="row.processStatus === 'UNHANDLED'" type="info" size="small">未受理</el-tag>
-            <el-tag v-else-if="row.processStatus === 'HANDLING'" type="warning" size="small">办理中</el-tag>
-            <el-tag v-else-if="row.processStatus === 'COMPLETED'" type="success" size="small">已办结</el-tag>
-            <el-tag v-else type="danger" size="small">无法办理</el-tag>
+            <el-tag
+                v-if="normalizeStatus(row.processStatus) === 'HANDLING'"
+                type="warning"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >受理中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'PROCESSING'"
+                type="primary"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >办理中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'FINISHING'"
+                type="info"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >办结中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'COMPLETED'"
+                type="success"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >完全办结
+            </el-tag>
+            <el-tag
+                v-else
+                type="danger"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >暂无法办结
+            </el-tag>
           </template>
         </el-table-column>
         <!-- 问题接收时间 -->
         <el-table-column
             prop="problemReceiveTime"
-            label="问题接收时间"
+            label="接收时间"
             align="center"
-            min-width="180"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.problemReceiveTime ? formatDate(row.problemReceiveTime) : '-' }}
@@ -209,14 +253,14 @@
             prop="updateTime"
             label="更新时间"
             align="center"
-            min-width="180"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.updateTime ? formatDate(row.updateTime) : '-' }}
           </template>
         </el-table-column>
         <!-- 操作列 -->
-        <el-table-column label="操作" align="center" width="200">
+        <el-table-column label="操作" align="center" width="100">
           <template #default="{ row }">
             <!-- 办理进度按钮 -->
             <el-button
@@ -227,16 +271,6 @@
                 @click="handleViewProcess(row)"
                 title="查看办理进度">
               办理进度
-            </el-button>
-            <!-- 状态更新按钮 -->
-            <el-button
-                link
-                type="success"
-                icon="Edit"
-                size="small"
-                @click="handleUpdateStatus(row)"
-                title="更新办理状态">
-              更新状态
             </el-button>
           </template>
         </el-table-column>
@@ -256,244 +290,7 @@
       />
     </el-card>
 
-    <!-- 办理进度弹窗 -->
-    <el-dialog
-        v-model="processDialogVisible"
-        title="问题办理进度详情"
-        width="900px"
-        destroy-on-close
-        append-to-body
-        style="font-size: 13px;"
-    >
-      <div v-if="currentPackageContact" class="process-detail">
-        <!-- 基础信息 -->
-        <el-descriptions :column="2" border style="margin-bottom: 20px; font-size: 13px;">
-          <el-descriptions-item label="包抓联编号">{{ currentPackageContact.packageNo || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="企业名称">{{ currentPackageContact.enterpriseName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="包抓领导">{{ currentPackageContact.leaderName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="专班负责单位">{{ currentPackageContact.classDeptName || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="问题类型">
-            <el-tag type="primary" size="small">
-              {{ getProblemTypeName(currentPackageContact.problemType) || currentPackageContact.problemType }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="流程状态">
-            <el-tag v-if="currentPackageContact.processStatus === 'UNHANDLED'" type="info" size="small">未受理</el-tag>
-            <el-tag v-else-if="currentPackageContact.processStatus === 'HANDLING'" type="warning" size="small">办理中</el-tag>
-            <el-tag v-else-if="currentPackageContact.processStatus === 'COMPLETED'" type="success" size="small">已办结</el-tag>
-            <el-tag v-else type="danger" size="small">无法办理</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="问题接收时间" :span="2">
-            {{ currentPackageContact.problemReceiveTime ? formatDate(currentPackageContact.problemReceiveTime) : '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="企业反映的问题" :span="2">
-            <div style="white-space: pre-wrap; word-break: break-all;">{{ currentPackageContact.enterpriseProblem || '-' }}</div>
-          </el-descriptions-item>
-          <el-descriptions-item label="无法办理说明" v-if="currentPackageContact.processStatus === 'UNABLE'" :span="2">
-            {{ currentPackageContact.unableReason || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="办结时间" v-if="currentPackageContact.processStatus === 'COMPLETED'" :span="2">
-            {{ currentPackageContact.completeTime ? formatDate(currentPackageContact.completeTime) : '-' }}
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <!-- 办理进度条 -->
-        <div class="process-progress" style="margin: 30px 0;">
-          <h4 style="margin-bottom: 15px; font-size: 13px;">办理进度</h4>
-          <el-steps :active="getProcessStep()" finish-status="success" align-center style="font-size: 13px;">
-            <el-step title="问题接收" description="已接收企业反馈问题"></el-step>
-            <el-step title="办理中" description="正在处理企业问题"></el-step>
-            <el-step title="办理完成" description="问题已办结"></el-step>
-          </el-steps>
-        </div>
-
-        <!-- 办理记录列表 -->
-        <div class="process-record-list">
-          <h4 style="margin-bottom: 15px; font-size: 13px;">办理记录</h4>
-          <el-table
-              :data="handleRecordList"
-              border
-              stripe
-              style="width: 100%; margin-bottom: 20px; font-size: 13px;"
-              v-loading="recordLoading"
-          >
-            <el-table-column
-                label="序号"
-                align="center"
-                width="80"
-                type="index"
-            />
-            <el-table-column
-                prop="handleLeader"
-                label="办理领导"
-                align="center"
-                min-width="100"
-            />
-            <el-table-column
-                prop="handleTime"
-                label="办理时间"
-                align="center"
-                min-width="180"
-            >
-              <template #default="{ row }">
-                {{ row.handleTime ? formatDate(row.handleTime) : '-' }}
-              </template>
-            </el-table-column>
-            <el-table-column
-                prop="handleType"
-                label="办理类型"
-                align="center"
-                min-width="100"
-            >
-              <template #default="{ row }">
-                <el-tag type="primary" size="small">{{ row.handleType || '-' }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column
-                prop="handleContent"
-                label="办理内容"
-                align="center"
-                min-width="200"
-                show-overflow-tooltip
-            />
-            <el-table-column
-                label="操作"
-                align="center"
-                width="120"
-            >
-              <template #default="{ row }">
-                <el-button
-                    link
-                    type="primary"
-                    icon="Edit"
-                    size="small"
-                    @click="handleEditRecord(row)"
-                >
-                  编辑
-                </el-button>
-                <el-button
-                    link
-                    type="danger"
-                    icon="Delete"
-                    size="small"
-                    @click="handleDeleteRecord(row)"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-
-          <!-- 新增办理记录按钮（仅办理中状态显示） -->
-          <el-button
-              v-if="currentPackageContact.processStatus === 'HANDLING'"
-              type="primary"
-              icon="Plus"
-              @click="handleAddRecord"
-              style="margin-bottom: 10px; font-size: 13px;"
-          >
-            新增办理记录
-          </el-button>
-        </div>
-      </div>
-
-      <template #footer>
-        <el-button @click="processDialogVisible = false" style="font-size: 13px;">关 闭</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 新增/编辑办理记录弹窗 -->
-    <el-dialog
-        v-model="recordDialogVisible"
-        :title="recordDialogTitle"
-        width="700px"
-        destroy-on-close
-        style="font-size: 13px;"
-    >
-      <el-form :model="recordForm" label-width="120px" ref="recordFormRef" :rules="recordRules" style="font-size: 13px;">
-        <el-form-item label="办理领导" prop="handleLeader">
-          <el-input v-model="recordForm.handleLeader" placeholder="请输入本次办理领导姓名" style="font-size: 13px;"></el-input>
-        </el-form-item>
-        <el-form-item label="办理类型" prop="handleType">
-          <el-select v-model="recordForm.handleType" placeholder="请选择办理类型" style="font-size: 13px;">
-            <el-option label="跟进" value="FOLLOW"></el-option>
-            <el-option label="沟通" value="COMMUNICATE"></el-option>
-            <el-option label="提交材料" value="SUBMIT"></el-option>
-            <el-option label="回复企业" value="REPLY"></el-option>
-            <el-option label="其他" value="OTHER"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="办理内容" prop="handleContent">
-          <el-input
-              v-model="recordForm.handleContent"
-              placeholder="请输入本次办理内容/跟进情况"
-              type="textarea"
-              :rows="5"
-              style="font-size: 13px;"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="附件URL">
-          <el-input v-model="recordForm.attachUrl" placeholder="多个附件用逗号分隔" style="font-size: 13px;"></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="recordDialogVisible = false" style="font-size: 13px;">取 消</el-button>
-        <el-button type="primary" @click="submitRecordForm" style="font-size: 13px;">确 定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 更新办理状态弹窗 -->
-    <el-dialog
-        v-model="statusDialogVisible"
-        title="更新办理状态"
-        width="600px"
-        destroy-on-close
-        style="font-size: 13px;"
-    >
-      <el-form :model="statusForm" label-width="120px" ref="statusFormRef" :rules="statusRules" style="font-size: 13px;">
-        <el-form-item label="流程状态" prop="processStatus">
-          <el-select v-model="statusForm.processStatus" placeholder="请选择流程状态" style="font-size: 13px;">
-            <el-option label="未受理" value="UNHANDLED"></el-option>
-            <el-option label="办理中" value="HANDLING"></el-option>
-            <el-option label="已办结" value="COMPLETED"></el-option>
-            <el-option label="无法办理" value="UNABLE"></el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item
-            label="无法办理说明"
-            prop="unableReason"
-            v-if="statusForm.processStatus === 'UNABLE'"
-        >
-          <el-input
-              v-model="statusForm.unableReason"
-              placeholder="请输入无法办理的原因"
-              type="textarea"
-              :rows="3"
-              style="font-size: 13px;"
-          ></el-input>
-        </el-form-item>
-        <el-form-item
-            label="办结时间"
-            prop="completeTime"
-            v-if="statusForm.processStatus === 'COMPLETED'"
-        >
-          <el-date-picker
-              v-model="statusForm.completeTime"
-              type="datetime"
-              placeholder="请选择办结时间"
-              style="width: 100%; font-size: 13px;"
-              format="YYYY-MM-DD HH:mm:ss"
-              value-format="YYYY-MM-DD HH:mm:ss"
-          ></el-date-picker>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="statusDialogVisible = false" style="font-size: 13px;">取 消</el-button>
-        <el-button type="primary" @click="submitStatusForm" style="font-size: 13px;">确 定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 新增：查看全部问题内容弹窗 -->
+    <!-- 查看全部问题内容弹窗 -->
     <el-dialog
         v-model="fullProblemDialogVisible"
         title="企业反映的问题详情"
@@ -508,32 +305,193 @@
         <el-button @click="fullProblemDialogVisible = false">关 闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 新增包抓联问题弹窗 -->
+    <el-dialog
+        v-model="addPackageContactDialogVisible"
+        title="新增包抓联问题"
+        width="800px"
+        destroy-on-close
+        style="font-size: 13px;"
+    >
+      <el-form :model="packageContactForm" label-width="120px" ref="packageContactFormRef" :rules="packageContactRules"
+               style="font-size: 13px;">
+        <!-- 问题编号：禁用，系统自动生成 -->
+        <el-form-item label="问题编号" prop="packageNo">
+          <el-input
+              v-model="packageContactForm.packageNo"
+              placeholder="系统自动生成"
+              style="font-size: 13px;"
+              disabled
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="办理状态" prop="processStatus">
+          <el-select v-model="packageContactForm.processStatus" placeholder="请选择办理状态" style="font-size: 13px;"
+                     disabled>
+            <el-option label="受理中" value="HANDLING"></el-option>
+          </el-select>
+        </el-form-item>
+        <!-- 企业选择下拉框（远程搜索） -->
+        <el-form-item label="企业名称" prop="enterpriseId">
+          <el-select
+              v-model="packageContactForm.enterpriseId"
+              placeholder="请选择企业"
+              style="width: 100%; font-size: 13px;"
+              @change="handleEnterpriseChange"
+              filterable
+              remote
+              :remote-method="remoteSearchEnterprise"
+              :loading="enterpriseLoading"
+          >
+            <el-option
+                v-for="item in enterpriseList"
+                :key="item.id"
+                :label="item.enterpriseName"
+                :value="item.id"
+            />
+          </el-select>
+        </el-form-item>
+        <!-- 包抓领导：自动填充，禁用 -->
+        <el-form-item label="包抓领导" prop="leaderName">
+          <el-input
+              v-model="packageContactForm.leaderName"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 企业全称：自动填充，禁用 -->
+        <el-form-item label="企业全称" prop="enterpriseName">
+          <el-input
+              v-model="packageContactForm.enterpriseName"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 企业负责人：自动填充，禁用 -->
+        <el-form-item label="企业负责人" prop="enterpriseLeader">
+          <el-input
+              v-model="packageContactForm.enterpriseLeader"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 企业联系电话：自动填充，禁用 -->
+        <el-form-item label="企业联系电话" prop="enterprisePhone">
+          <el-input
+              v-model="packageContactForm.enterprisePhone"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 专班班长：自动填充，禁用 -->
+        <el-form-item label="专班班长" prop="classMonitor">
+          <el-input
+              v-model="packageContactForm.classMonitor"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 专班负责单位：自动填充，禁用 -->
+        <el-form-item label="专班负责单位" prop="classDeptName">
+          <el-input
+              v-model="packageContactForm.classDeptName"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <!-- 专班班长联系电话：自动填充，禁用 -->
+        <el-form-item label="专班班长联系电话" prop="classPhone">
+          <el-input
+              v-model="packageContactForm.classPhone"
+              placeholder="选择企业后自动填充"
+              style="font-size: 13px;"
+              readonly
+              disabled
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="企业反映的问题" prop="enterpriseProblem">
+          <el-input
+              v-model="packageContactForm.enterpriseProblem"
+              placeholder="请输入企业反映的问题"
+              type="textarea"
+              :rows="5"
+              style="font-size: 13px;"
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="问题接收时间" prop="problemReceiveTime">
+          <el-date-picker
+              v-model="packageContactForm.problemReceiveTime"
+              type="datetime"
+              placeholder="请选择问题接收时间"
+              style="width: 100%; font-size: 13px;"
+              format="YYYY-MM-DD HH:mm:ss"
+              value-format="YYYY-MM-DD HH:mm:ss"
+              default-time="12:00:00"
+              :locale="zhCn"
+              :default-value="new Date()"
+          ></el-date-picker>
+        </el-form-item>
+        <el-form-item label="问题类型" prop="problemType">
+          <el-select v-model="packageContactForm.problemType" placeholder="请选择问题类型" style="font-size: 13px;">
+            <el-option
+                v-for="item in problemTypeList"
+                :key="item.itemCode"
+                :label="item.itemName"
+                :value="item.itemCode"
+            ></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input
+              v-model="packageContactForm.remark"
+              placeholder="请输入备注信息"
+              type="textarea"
+              :rows="3"
+              style="font-size: 13px;"
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addPackageContactDialogVisible = false" style="font-size: 13px;">取 消</el-button>
+        <el-button type="primary" @click="submitPackageContactForm" style="font-size: 13px;">确 定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-/**
- * 包抓联问题办理页面
- * 功能：分页查询问题列表、查看办理进度、新增/编辑/删除办理记录、更新办理状态
- * 依赖：Element Plus、自定义request、日期格式化工具
- */
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { formatDate } from '@/utils/dateUtil'
-// 引入问题办理API（路径改为/api/handle）
+import {ref, reactive, onMounted, onUnmounted} from 'vue'
+import {useRouter} from 'vue-router'
+import {ElMessage} from 'element-plus'
+import {formatDate} from '@/utils/dateUtil'
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
+import request from '@/utils/request'
+
+// 引入API - 修正导入路径
 import {
   pagePackageContact,
-  getPackageContactById,
-  listHandleRecord,
-  addHandleRecord,
-  updateHandleRecord,
-  deleteHandleRecord,
-  updateProcessStatus
-} from '@/api/handle'
-// 引入字典相关API（适配实际项目的字典接口）
-import { listDictItemByDictCode } from '@/api/dictItem'
+  addPackageContact,
+  getSmeLpeByEnterpriseId
+} from '@/api/smeple'
+import {listDictItemByDictCode} from '@/api/dictItem'
+import {pageEnterprise, getEnterpriseById} from '@/api/enterprise'
 
-// ========== 分页相关 ==========
+// 路由
+const router = useRouter()
+
+// ========== 分页配置 ==========
 const pageNum = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -541,22 +499,18 @@ const loading = ref(false)
 
 // ========== 数据存储 ==========
 const packageContactList = ref([])
-const currentPackageContact = ref(null) // 当前选中的问题记录
-const handleRecordList = ref([]) // 办理记录列表
-const recordLoading = ref(false)
-const problemTypeList = ref([]) // 仅存储问题类型字典项
-const fullProblemDialogVisible = ref(false) // 新增：查看全部问题弹窗控制
-const fullProblemContent = ref('') // 新增：弹窗中显示的完整问题内容
+const problemTypeList = ref([])
+const fullProblemDialogVisible = ref(false)
+const fullProblemContent = ref('')
+const enterpriseList = ref([])
+const enterpriseLoading = ref(false)
+let enterpriseSearchTimer = null
 
 // ========== 弹窗控制 ==========
-const processDialogVisible = ref(false) // 办理进度弹窗
-const recordDialogVisible = ref(false) // 办理记录弹窗
-const statusDialogVisible = ref(false) // 状态更新弹窗
-const recordDialogTitle = ref('') // 办理记录弹窗标题
+const addPackageContactDialogVisible = ref(false)
 
 // ========== 表单引用 ==========
-const recordFormRef = ref(null)
-const statusFormRef = ref(null)
+const packageContactFormRef = ref(null)
 
 // ========== 筛选表单 ==========
 const searchForm = reactive({
@@ -568,69 +522,98 @@ const searchForm = reactive({
   problemType: ''
 })
 
-// ========== 办理记录表单 ==========
-const recordForm = reactive({
-  id: undefined,
-  packageId: '',
-  handleLeader: '',
-  handleType: '',
-  handleContent: '',
-  attachUrl: ''
-})
-
-// ========== 状态更新表单 ==========
-const statusForm = reactive({
-  id: '',
-  processStatus: '',
-  completeTime: '',
-  unableReason: ''
+// ========== 新增问题表单 ==========
+const packageContactForm = reactive({
+  packageNo: '',
+  processStatus: 'HANDLING', // 新增默认受理中
+  leaderName: '',
+  enterpriseId: '',
+  enterpriseName: '',
+  enterpriseLeader: '',
+  enterprisePhone: '',
+  classMonitor: '',
+  classDeptName: '',
+  classPhone: '',
+  enterpriseProblem: '',
+  problemReceiveTime: '',
+  problemType: '',
+  remark: ''
 })
 
 // ========== 表单校验规则 ==========
-const recordRules = reactive({
-  handleLeader: [
-    { required: true, message: '请输入办理领导姓名', trigger: 'blur' }
-  ],
-  handleType: [
-    { required: true, message: '请选择办理类型', trigger: 'change' }
-  ],
-  handleContent: [
-    { required: true, message: '请输入办理内容', trigger: 'blur' }
-  ]
+const packageContactRules = reactive({
+  enterpriseId: [{required: true, message: '请选择企业', trigger: 'change'}],
+  enterpriseProblem: [{required: true, message: '请输入企业反映的问题', trigger: 'blur'}],
+  problemReceiveTime: [{required: true, message: '请选择问题接收时间', trigger: 'change'}],
+  problemType: [{required: true, message: '请选择问题类型', trigger: 'change'}]
 })
 
-const statusRules = reactive({
-  processStatus: [
-    { required: true, message: '请选择流程状态', trigger: 'change' }
-  ],
-  unableReason: [
-    { required: true, message: '请输入无法办理说明', trigger: 'blur' }
-  ],
-  completeTime: [
-    { required: true, message: '请选择办结时间', trigger: 'change' }
-  ]
-})
+// ========== 企业远程搜索 ==========
+const remoteSearchEnterprise = (query) => {
+  if (enterpriseSearchTimer) clearTimeout(enterpriseSearchTimer)
+  enterpriseSearchTimer = setTimeout(async () => {
+    try {
+      enterpriseLoading.value = true
+      const res = await pageEnterprise({
+        pageNum: 1,
+        pageSize: 50,
+        enterpriseName: query || ''
+      })
+      enterpriseList.value = res.data?.records || []
+    } catch (e) {
+      console.error('企业搜索失败：', e)
+      ElMessage.error('加载企业列表失败')
+      enterpriseList.value = []
+    } finally {
+      enterpriseLoading.value = false
+    }
+  }, 300)
+}
 
-// ========== 新增：点击查看全部问题内容 ==========
+// ========== 企业选择变更 ==========
+const handleEnterpriseChange = async (enterpriseId) => {
+  if (!enterpriseId) {
+    Object.assign(packageContactForm, {
+      leaderName: '', enterpriseName: '', enterpriseLeader: '', enterprisePhone: '',
+      classMonitor: '', classDeptName: '', classPhone: ''
+    })
+    return
+  }
+  try {
+    const enterpriseRes = await getEnterpriseById(enterpriseId)
+    if (enterpriseRes.code === 200 && enterpriseRes.data) {
+      packageContactForm.enterpriseName = enterpriseRes.data.enterpriseName || ''
+      packageContactForm.enterpriseLeader = enterpriseRes.data.legalPerson || ''
+      packageContactForm.enterprisePhone = enterpriseRes.data.phone || ''
+    }
+    const smeLpeRes = await getSmeLpeByEnterpriseId(enterpriseId)
+    if (smeLpeRes.code === 200 && smeLpeRes.data) {
+      packageContactForm.leaderName = smeLpeRes.data.leaderName || ''
+      packageContactForm.classMonitor = smeLpeRes.data.classMonitor || ''
+      packageContactForm.classDeptName = smeLpeRes.data.classDeptName || ''
+      packageContactForm.classPhone = smeLpeRes.data.classPhone || ''
+    } else {
+      ElMessage.warning('该企业暂无包抓联配置，请先配置后再新增问题')
+      packageContactForm.enterpriseId = ''
+    }
+  } catch (e) {
+    console.error('获取企业关联信息失败：', e)
+    ElMessage.error('获取企业关联信息失败')
+    packageContactForm.enterpriseId = ''
+  }
+}
+
+// ========== 查看完整问题内容 ==========
 const handleShowFullProblem = (row) => {
   fullProblemContent.value = row.enterpriseProblem || '-'
   fullProblemDialogVisible.value = true
 }
 
-// ========== 修复：使用项目实际的字典项接口获取问题类型 ==========
+// ========== 获取问题类型字典 ==========
 const getProblemTypeList = async () => {
   try {
-    // 直接调用项目中已实现的：根据字典编码获取字典项列表接口
     const res = await listDictItemByDictCode('package_problem_type')
-
-    if (res.code === 200 && res.data) {
-      // 适配返回格式（根据你字典项接口的实际返回结构）
-      problemTypeList.value = Array.isArray(res.data) ? res.data : (res.data.records || [])
-      console.log('加载的问题类型字典项:', problemTypeList.value)
-    } else {
-      ElMessage.warning('未查询到问题类型字典项，请检查字典配置')
-      problemTypeList.value = []
-    }
+    problemTypeList.value = res.code === 200 && Array.isArray(res.data) ? res.data : []
   } catch (e) {
     console.error('加载问题类型字典失败：', e)
     ElMessage.error('加载问题类型字典失败')
@@ -638,28 +621,27 @@ const getProblemTypeList = async () => {
   }
 }
 
-// ========== 根据编码获取问题类型名称 ==========
+// ========== 字典值转换 ==========
 const getProblemTypeName = (code) => {
   if (!code) return ''
   const item = problemTypeList.value.find(item => item.itemCode === code)
   return item ? item.itemName : code
 }
 
-// ========== 核心方法 - 获取问题列表 ==========
+// ========== 查询问题列表 ==========
 const getList = async () => {
   loading.value = true
   try {
     const queryParams = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-      ...(searchForm.processStatus && { processStatus: searchForm.processStatus }),
-      ...(searchForm.leaderName && { leaderName: searchForm.leaderName }),
-      ...(searchForm.enterpriseName && { enterpriseName: searchForm.enterpriseName }),
-      ...(searchForm.classMonitor && { classMonitor: searchForm.classMonitor }),
-      ...(searchForm.classDeptName && { classDeptName: searchForm.classDeptName }),
-      ...(searchForm.problemType && { problemType: searchForm.problemType })
+      ...(searchForm.processStatus && {processStatus: searchForm.processStatus}),
+      ...(searchForm.leaderName && {leaderName: searchForm.leaderName}),
+      ...(searchForm.enterpriseName && {enterpriseName: searchForm.enterpriseName}),
+      ...(searchForm.classMonitor && {classMonitor: searchForm.classMonitor}),
+      ...(searchForm.classDeptName && {classDeptName: searchForm.classDeptName}),
+      ...(searchForm.problemType && {problemType: searchForm.problemType})
     }
-
     const res = await pagePackageContact(queryParams)
     if (res.code === 200 && res.data) {
       packageContactList.value = res.data.records || []
@@ -667,11 +649,11 @@ const getList = async () => {
     } else {
       packageContactList.value = []
       total.value = 0
-      ElMessage.warning('暂无问题办理数据')
+      ElMessage.warning('暂无包抓联问题数据')
     }
   } catch (e) {
-    console.error('加载问题办理列表失败：', e)
-    ElMessage.error('加载问题办理列表失败，请刷新页面重试')
+    console.error('查询问题列表失败：', e)
+    ElMessage.error('查询失败，请刷新页面重试')
     packageContactList.value = []
     total.value = 0
   } finally {
@@ -679,192 +661,18 @@ const getList = async () => {
   }
 }
 
-// ========== 查看办理进度 ==========
-const handleViewProcess = async (row) => {
-  try {
-    // 获取问题详情
-    const res = await getPackageContactById(row.id)
-    if (res.code === 200 && res.data) {
-      currentPackageContact.value = res.data
-      // 获取办理记录
-      await getHandleRecordList(row.id)
-      processDialogVisible.value = true
-    } else {
-      ElMessage.error('获取问题详情失败')
-    }
-  } catch (e) {
-    console.error('获取问题详情失败：', e)
-    ElMessage.error('获取问题详情失败')
-  }
+// ========== 分页事件处理 ==========
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  getList()
 }
 
-// ========== 获取办理记录列表 ==========
-const getHandleRecordList = async (packageId) => {
-  recordLoading.value = true
-  try {
-    const res = await listHandleRecord(packageId)
-    if (res.code === 200 && res.data) {
-      handleRecordList.value = res.data || []
-    } else {
-      handleRecordList.value = []
-    }
-  } catch (e) {
-    console.error('加载办理记录失败：', e)
-    ElMessage.error('加载办理记录失败')
-    handleRecordList.value = []
-  } finally {
-    recordLoading.value = false
-  }
+const handleCurrentChange = (val) => {
+  pageNum.value = val
+  getList()
 }
 
-// ========== 新增办理记录 ==========
-const handleAddRecord = () => {
-  recordFormRef.value?.resetFields()
-  Object.assign(recordForm, {
-    id: undefined,
-    packageId: currentPackageContact.value.id,
-    handleLeader: '',
-    handleType: '',
-    handleContent: '',
-    attachUrl: ''
-  })
-  recordDialogTitle.value = '新增办理记录'
-  recordDialogVisible.value = true
-}
-
-// ========== 编辑办理记录 ==========
-const handleEditRecord = (row) => {
-  recordFormRef.value?.resetFields()
-  Object.assign(recordForm, {
-    id: row.id,
-    packageId: row.packageId,
-    handleLeader: row.handleLeader || '',
-    handleType: row.handleType || '',
-    handleContent: row.handleContent || '',
-    attachUrl: row.attachUrl || ''
-  })
-  recordDialogTitle.value = '编辑办理记录'
-  recordDialogVisible.value = true
-}
-
-// ========== 删除办理记录 ==========
-const handleDeleteRecord = (row) => {
-  ElMessageBox.confirm(
-      `确定要删除该办理记录吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-        draggable: true
-      }
-  ).then(async () => {
-    try {
-      const res = await deleteHandleRecord(row.id)
-      if (res.code === 200) {
-        ElMessage.success('删除成功')
-        await getHandleRecordList(row.packageId)
-      } else {
-        ElMessage.error('删除失败：' + (res.msg || '未知错误'))
-      }
-    } catch (e) {
-      console.error('删除办理记录失败：', e)
-      ElMessage.error('删除失败，请重试')
-    }
-  }).catch(() => {
-    ElMessage.info('已取消删除')
-  })
-}
-
-// ========== 提交办理记录 ==========
-const submitRecordForm = async () => {
-  try {
-    await recordFormRef.value.validate()
-    let res
-    if (recordForm.id) {
-      res = await updateHandleRecord(recordForm)
-    } else {
-      res = await addHandleRecord(recordForm)
-    }
-    if (res.code === 200) {
-      ElMessage.success(recordForm.id ? '修改成功' : '新增成功')
-      recordDialogVisible.value = false
-      await getHandleRecordList(recordForm.packageId)
-    } else {
-      ElMessage.error(recordForm.id ? '修改失败' : '新增失败' + (res.msg || ''))
-    }
-  } catch (e) {
-    if (e.name !== 'ValidationError') {
-      console.error('保存办理记录失败：', e)
-      ElMessage.error('保存失败，请重试')
-    }
-  }
-}
-
-// ========== 更新办理状态 ==========
-const handleUpdateStatus = (row) => {
-  statusFormRef.value?.resetFields()
-  Object.assign(statusForm, {
-    id: row.id,
-    processStatus: row.processStatus || '',
-    completeTime: row.completeTime ? formatDate(row.completeTime) : '',
-    unableReason: row.unableReason || ''
-  })
-  statusDialogVisible.value = true
-}
-
-// ========== 提交状态更新（修复表单校验引用错误） ==========
-const submitStatusForm = async () => {
-  try {
-    // 动态校验：仅当状态为UNABLE时校验unableReason，仅当状态为COMPLETED时校验completeTime
-    let validatePass = true
-    if (statusForm.processStatus === 'UNABLE') {
-      const result = await statusFormRef.value.validateField('unableReason')
-      if (result) validatePass = false
-    }
-    if (statusForm.processStatus === 'COMPLETED') {
-      const result = await statusFormRef.value.validateField('completeTime')
-      if (result) validatePass = false
-    }
-    if (!validatePass) return
-
-    const res = await updateProcessStatus(
-        statusForm.id,
-        statusForm.processStatus,
-        statusForm.completeTime,
-        statusForm.unableReason
-    )
-    if (res.code === 200) {
-      ElMessage.success('状态更新成功')
-      statusDialogVisible.value = false
-      getList()
-    } else {
-      ElMessage.error('状态更新失败：' + (res.msg || '未知错误'))
-    }
-  } catch (e) {
-    console.error('更新办理状态失败：', e)
-    ElMessage.error('更新失败，请重试')
-  }
-}
-
-// ========== 获取进度步骤 ==========
-const getProcessStep = () => {
-  if (!currentPackageContact.value) return 0
-  const status = currentPackageContact.value.processStatus
-  switch (status) {
-    case 'UNHANDLED':
-      return 0
-    case 'HANDLING':
-      return 1
-    case 'COMPLETED':
-    case 'UNABLE':
-      return 2
-    default:
-      return 0
-  }
-}
-
-// ========== 分页/筛选辅助方法 ==========
+// ========== 重置筛选表单 ==========
 const resetSearch = () => {
   Object.assign(searchForm, {
     processStatus: '',
@@ -874,110 +682,108 @@ const resetSearch = () => {
     classDeptName: '',
     problemType: ''
   })
-  pageNum.value = 1
   getList()
 }
 
-const handleSizeChange = (val) => {
-  pageSize.value = val
-  pageNum.value = 1
-  getList()
+// 状态标准化：兼容后端UNHANDLED（未处理）映射为HANDLING（受理中）
+const normalizeStatus = (status) => {
+  if (status === 'UNHANDLED') return 'HANDLING'
+  return status
 }
 
-const handleCurrentChange = (val) => {
-  pageNum.value = val
-  getList()
+// ========== 查看办理进度（跳转到详情页） ==========
+const handleViewProcess = (row) => {
+  router.push({
+    path: '/smeple/handle/detail',
+    query: { id: row.id }
+  })
 }
 
-// ========== 页面初始化 ==========
-onMounted(() => {
-  getProblemTypeList() // 先加载问题类型字典
-  getList()
+// ========== 打开新增问题弹窗 ==========
+const handleAddPackageContact = () => {
+  packageContactFormRef.value?.resetFields()
+  Object.assign(packageContactForm, {
+    packageNo: '',
+    processStatus: 'HANDLING', // 新增默认受理中
+    leaderName: '',
+    enterpriseId: '',
+    enterpriseName: '',
+    enterpriseLeader: '',
+    enterprisePhone: '',
+    classMonitor: '',
+    classDeptName: '',
+    classPhone: '',
+    enterpriseProblem: '',
+    problemReceiveTime: '',
+    problemType: '',
+    remark: ''
+  })
+  addPackageContactDialogVisible.value = true
+}
+
+// ========== 提交新增问题 ==========
+const submitPackageContactForm = async () => {
+  try {
+    await packageContactFormRef.value.validate()
+    const submitData = {...packageContactForm}
+    delete submitData.packageNo
+    delete submitData.leaderName
+    delete submitData.enterpriseName
+    delete submitData.enterpriseLeader
+    delete submitData.enterprisePhone
+    delete submitData.classMonitor
+    delete submitData.classDeptName
+    delete submitData.classPhone
+    const res = await addPackageContact(submitData)
+    if (res.code === 200) {
+      ElMessage.success('新增包抓联问题成功')
+      addPackageContactDialogVisible.value = false
+      getList()
+    } else {
+      ElMessage.error('新增失败：' + (res.msg || '未知错误'))
+    }
+  } catch (e) {
+    if (e.name !== 'ValidationError') {
+      console.error('新增问题失败：', e)
+      ElMessage.error('新增问题失败，请重试')
+    }
+  }
+}
+
+// ========== 初始化 ==========
+onMounted(async () => {
+  await getProblemTypeList()
+  await getList()
+})
+
+// ========== 清理定时器 ==========
+onUnmounted(() => {
+  if (enterpriseSearchTimer) clearTimeout(enterpriseSearchTimer)
 })
 </script>
 
 <style scoped>
 .sme-package-handle-container {
-  height: 100%;
-  padding: 10px;
-  font-size: 13px; /* 全局字体缩小 */
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
 .filter-card {
   margin-bottom: 20px;
-  font-size: 13px;
+  background-color: #fff;
 }
 
 .list-card {
-  height: calc(100% - 100px);
-  overflow: auto;
-  font-size: 13px;
+  background-color: #fff;
 }
 
-.pagination {
-  margin-top: 20px;
-  text-align: right;
-  font-size: 13px;
-}
-
-.el-form {
-  padding: 10px 0;
-  font-size: 13px;
-}
-
-.process-detail {
-  max-height: 70vh;
-  overflow-y: auto;
-  font-size: 13px;
-}
-
-.process-progress {
-  margin: 20px 0;
-  font-size: 13px;
-}
-
-.process-record-list {
-  margin-top: 20px;
-  font-size: 13px;
-}
-
-:deep(.el-table-column--operation .el-button) {
-  margin: 0 2px;
-  font-size: 13px;
-}
-
-:deep(.el-descriptions) {
-  --el-descriptions-item-label-width: 120px;
-  font-size: 13px;
-}
-
-/* 统一所有Element组件字体大小 */
-:deep(.el-input),
-:deep(.el-select),
-:deep(.el-button),
-:deep(.el-table),
-:deep(.el-pagination),
-:deep(.el-dialog),
-:deep(.el-form-item),
-:deep(.el-tag),
-:deep(.el-steps),
-:deep(.el-date-picker) {
-  font-size: 13px !important;
-}
-
-:deep(.el-table th),
-:deep(.el-table td) {
-  font-size: 13px !important;
-  padding: 8px 0 !important;
-}
-
-:deep(.el-dialog__title) {
-  font-size: 14px !important; /* 弹窗标题稍大一点 */
-}
-
-/* 新增：问题内容点击查看全部样式 */
 .problem-content {
   cursor: pointer;
   color: #409eff;
+}
+
+.pagination {
+  margin-top: 15px;
+  text-align: right;
 }
 </style>

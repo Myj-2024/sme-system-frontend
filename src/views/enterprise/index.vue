@@ -256,7 +256,7 @@ import {
   deleteEnterprise,
   changeEnterpriseStatus
 } from '@/api/enterprise'
-import { checkEnterpriseBind } from '@/api/smePle'
+import { checkEnterpriseBind } from '@/api/smeple.js'
 
 // 分页相关
 const pageNum = ref(1)          // 当前页码

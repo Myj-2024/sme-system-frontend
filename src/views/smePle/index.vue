@@ -346,7 +346,7 @@ import {
   addSmePle,
   updateSmePle,
   deleteSmePle
-} from '@/api/smePle'
+} from '@/api/smeple.js'
 // 引入企业和部门API
 import { pageEnterprise, getEnterpriseById } from '@/api/enterprise'
 import { listDept } from '@/api/dept'
@@ -669,7 +669,6 @@ onMounted(() => {
 <style scoped>
 .sme-ple-container {
   height: 100%;
-  padding: 10px;
 }
 
 .filter-card {
@@ -684,10 +683,6 @@ onMounted(() => {
 .pagination {
   margin-top: 20px;
   text-align: right;
-}
-
-.el-form {
-  padding: 10px 0;
 }
 
 :deep(.el-table-column--operation .el-button) {

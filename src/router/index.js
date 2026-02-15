@@ -29,12 +29,22 @@ const routes = [
                 component: () => import('@/views/smePle/index.vue'),
                 meta: {title: '包抓联管理'}
             },
-            // 新增：问题办理路由（包抓联管理二级页面）
+            // 问题办理列表路由
             {
                 path: 'smeple/handle',
                 name: 'SmePleHandle',
                 component: () => import('@/views/smePle/handle/index.vue'),
                 meta: {title: '问题办理', activeMenu: '/smeple/list'}
+            },
+            // 办理进度详情路由
+            {
+                path: 'smeple/handle/detail',
+                name: 'SmePleHandleDetail',
+                component: () => import('@/views/smePle/handle/PackageProcessDetail.vue'),
+                meta: {
+                    title: '问题办理进度详情',
+                    activeMenu: '/smeple/list'
+                }
             },
             // 原有其他路由
             {

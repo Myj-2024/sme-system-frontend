@@ -140,7 +140,7 @@ import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 import { listDept, addDept, updateDept, deleteDept, changeDeptStatus, pageDept } from '@/api/dept'
-import { checkDeptBind } from '@/api/smePle'
+import { checkDeptBind } from '@/api/smeple.js'
 
 const loading = ref(false)
 const deptList = ref([])

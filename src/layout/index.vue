@@ -125,7 +125,7 @@
           </div>
         </div>
 
-        <div class="header-right">
+        <div class="header-right" style="width: 200px">
           <el-dropdown>
             <span class="user-info">
               <el-avatar size="32" src="/avatar.png"/>
@@ -240,7 +240,6 @@ const logout = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
 }
 
 .header-left {
@@ -282,7 +281,6 @@ const logout = () => {
 }
 
 .layout-content {
-  padding: 20px;
   background: #f5f7fa;
   flex: 1;
   overflow: auto;
@@ -293,5 +291,6 @@ const logout = () => {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 13px;
 }
 </style>
