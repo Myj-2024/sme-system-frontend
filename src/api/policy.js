@@ -7,8 +7,11 @@ import request from '@/utils/request'
 export function pagePolicy(params) {
     return request({
         url: '/admin/policy/page',
-        method: 'post', // 匹配后端@PostMapping("/page")
-        data: params    // POST请求用data传递参数
+        method: 'post',
+        data: {
+            ...params,
+            showHidden: false // 默认不显示已隐藏，如需显示则传true
+        }
     })
 }
 
@@ -83,22 +86,70 @@ export function getPolicyTypeOptions() {
     })
 }
 
+// @/api/policy.js 中的 uploadFile 函数
+
+
 /**
- * 文件上传到MinIO
- * @param {FormData} formData - 包含file和fileType的表单数据
+ * 政策发布-文件上传
+ * @param {FormData} formData
  */
 export function uploadFile(formData) {
+    return new Promise((resolve, reject) => {
+        request({
+            url: '/upload',
+            method: 'post',
+            data: formData,
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }).then(response => {
+            // 调试打印：请在浏览器控制台查看这个输出，确认 res 的真实模样
+            console.log('Upload Response Context:', response);
+
+            // 1. 兼容性提取：response 可能是原始响应，也可能是被拦截器处理后的结果
+            const res = response;
+
+            // 2. 如果 res 直接就是 URL 字符串 (拦截器直接返回了 res.data.data)
+            if (typeof res === 'string' && res.startsWith('http')) {
+                return resolve(res);
+            }
+
+            // 3. 如果 res 是标准的结果对象
+            if (res && (res.code == 200 || res.code == 0)) {
+                // 优先取 data，data 为空取 message
+                const imageUrl = res.data || res.message;
+                if (imageUrl && typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                    resolve(imageUrl);
+                } else {
+                    reject(new Error('上传成功但未获取到有效URL'));
+                }
+            } else {
+                // 4. 处理业务错误
+                reject(new Error(res.message || '上传接口业务异常'));
+            }
+        }).catch(error => {
+            // 5. 处理网络错误或拦截器抛出的 Promise.reject
+            console.error('Upload Request Error:', error);
+            reject(new Error(error.message || '网络请求失败'));
+        });
+    });
+}
+
+/**
+ * 政策发布-批量显示选中的已隐藏数据（保持不变，已正确传递ID数组）
+ */
+export function batchShowPolicies(data) {
     return request({
-        url: '/upload', // 你的upload接口地址
-        method: 'post',
-        data: formData,
-        headers: {
-            'Content-Type': 'multipart/form-data' // 必须指定表单格式
-        },
-        // 可选：上传进度回调
-        onUploadProgress: (progressEvent) => {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
-            console.log(`上传进度：${percent}%`)
-        }
+        url: '/admin/policy/batch/show',
+        method: 'put',
+        data: data // 直接把入参作为请求体（data）传递
+    })
+}
+
+/**
+ * 新增：查询所有已隐藏政策ID
+ */
+export function getHiddenPolicyIds() {
+    return request({
+        url: '/admin/policy/hidden/ids',
+        method: 'get'
     })
 }

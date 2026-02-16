@@ -45,6 +45,7 @@
           />
         </el-form-item>
         <el-form-item label="政策内容">
+          <!-- 保留：查询区使用普通el-input -->
           <el-input
               v-model="queryParams.content"
               placeholder="请输入政策内容关键词"
@@ -57,6 +58,7 @@
           <el-button type="primary" icon="Search" @click="getList">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Plus" @click="handleAdd">新增政策</el-button>
+          <el-button type="success" icon="View" @click="handleBatchShowHidden">一键显示已隐藏政策</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -102,6 +104,12 @@
             {{ scope.row.updateTime ? formatDate(scope.row.updateTime) : '-' }}
           </template>
         </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.delFlag === 1 && scope.row.isShow === 0" type="danger">已隐藏</el-tag>
+            <el-tag v-else type="success">正常</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="300" align="center">
           <template #default="scope">
             <el-switch
@@ -119,6 +127,7 @@
                 active-text="显示"
                 @change="handleShowChange(scope.row)"
                 style="margin-right: 8px;"
+                :disabled="scope.row.delFlag === 1"
             />
             <el-button link type="primary" @click="handleUpdate(scope.row)">修改</el-button>
             <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
@@ -146,7 +155,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog :title="dialogTitle" v-model="open" width="800px" append-to-body>
+    <el-dialog :title="dialogTitle" v-model="open" width="850px" append-to-body>
       <el-form ref="policyFormRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="政策标题" prop="title">
           <el-input v-model="form.title" placeholder="请输入政策标题" style="width: 100%;"/>
@@ -165,17 +174,8 @@
           <el-input v-model="form.publisherName" readonly style="width: 100%;"/>
         </el-form-item>
         <el-form-item label="政策内容" prop="content">
-          <div class="editor-container">
-            <quill-editor
-                ref="quillRef"
-                v-model:content="form.content"
-                content-type="html"
-                :options="editorOption"
-                style="height:300px"
-                @update:content="handleEditorChange"
-                @init="handleQuillInit"
-            />
-          </div>
+          <!-- 保留：对话框中正常使用富文本编辑器 -->
+          <Editor v-model="form.content"/>
         </el-form-item>
         <el-form-item label="发布时间">
           <el-date-picker
@@ -192,12 +192,6 @@
             <el-radio :label="0">否</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="是否显示">
-          <el-radio-group v-model="form.isShow">
-            <el-radio :label="1">是</el-radio>
-            <el-radio :label="0">否</el-radio>
-          </el-radio-group>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="open = false">取消</el-button>
@@ -208,10 +202,11 @@
 </template>
 
 <script setup>
-import {ref, onMounted, nextTick} from 'vue';
+import {ref, onMounted, watch, nextTick} from 'vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
-import {QuillEditor} from '@vueup/vue-quill';
-import '@vueup/vue-quill/dist/vue-quill.snow.css';
+
+// 导入封装好的 Editor 组件
+import Editor from '@/components/Editor.vue';
 
 // 导入 API
 import {
@@ -222,18 +217,18 @@ import {
   changePolicyTopStatus,
   changePolicyShowStatus,
   getPolicyTypeOptions,
-  uploadFile, // 必须导入你定义的上传接口
+  batchShowPolicies,
+  getHiddenPolicyIds
 } from '@/api/policy';
 
-// ========== 基础状态 ==========
+// 基础状态
 const loading = ref(false);
 const open = ref(false);
 const dialogTitle = ref('');
 const policyFormRef = ref(null);
 const policyTypeOptions = ref([]);
-let quillInstance = null;
 
-// ========== 查询参数 ==========
+// 查询参数
 const queryParams = ref({
   pageNum: 1,
   pageSize: 10,
@@ -244,11 +239,11 @@ const queryParams = ref({
   policyTypeName: '',
 });
 
-// ========== 列表数据 ==========
+// 列表数据
 const policyList = ref([]);
 const total = ref(0);
 
-// ========== 表单数据 ==========
+// 表单数据
 const form = ref({
   id: '',
   title: '',
@@ -261,11 +256,20 @@ const form = ref({
   isShow: 1,
 });
 
-// ========== 详情弹窗 ==========
+// 详情弹窗
 const contentDetailVisible = ref(false);
 const currentContent = ref('');
 
-// ========== 表单校验规则 ==========
+// 自定义校验逻辑：判断富文本是否为空
+const isEditorEmpty = (html) => {
+  if (!html || html === '<p><br></p>' || html === '<p></p>' || html === '') return true;
+  const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, '').trim();
+  // 如果没有文字但有图片，也不算空
+  if (!text && html.includes('<img')) return false;
+  return !text;
+};
+
+// 表单校验规则
 const rules = {
   title: [{required: true, message: '政策标题不能为空', trigger: 'blur'}],
   policyType: [{required: true, message: '请选择政策类型', trigger: 'change'}],
@@ -274,11 +278,10 @@ const rules = {
     {
       required: true,
       validator: (rule, value, callback) => {
-        if (!value || isEditorEmpty(value)) {
+        if (isEditorEmpty(value)) {
           callback(new Error('政策内容不能为空'));
         } else if (value.includes('data:image/')) {
-          // 这里是核心：如果提交时还包含 Base64，拦截并提示
-          callback(new Error('内容包含未成功上传的本地图片，请尝试重新粘贴或使用工具栏上传'));
+          callback(new Error('存在未上传的本地图片，请等待上传完成或重新上传'));
         } else {
           callback();
         }
@@ -288,242 +291,42 @@ const rules = {
   ]
 };
 
-// ========== 工具方法 ==========
-/**
- * 手动触发校验，确保富文本输入时错误提示消失
- */
-const handleEditorChange = () => {
-  nextTick(() => {
-    if (policyFormRef.value) {
-      policyFormRef.value.validateField('content');
-    }
-  });
-};
-
-/**
- * 将HTML转为纯文本
- */
-const getPlainTextFromHtml = (html) => {
-  if (!html) return '';
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return div.innerText.replace(/\s+/g, '').trim();
-};
-
-/**
- * 判断富文本是否为空
- */
-const isEditorEmpty = (html) => {
-  if (!html || html === '<p><br></p>') return true;
-  return !getPlainTextFromHtml(html);
-};
-
-/**
- * 获取当前用户完整信息
- */
+// 工具：获取用户信息
 const getCurrentUserInfo = () => {
-  const userInfo = localStorage.getItem('userInfo');
-  if (!userInfo) {
-    return {id: 1, name: '系统管理员'};
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    if (userInfo) {
+      const user = JSON.parse(userInfo);
+      return {
+        id: user.id || user.userId || 1,
+        name: user.realName || user.name || '系统管理员'
+      };
+    }
+  } catch (e) {
+    console.error("解析用户信息失败", e);
   }
-  const user = JSON.parse(userInfo);
-  return {
-    id: user.id || user.userId || 1,
-    name: user.realName || user.trueName || user.name || user.nickname || user.username || '系统管理员'
-  };
+  return {id: 1, name: '系统管理员'};
 };
 
-/**
- * 格式化日期
- */
+// 工具：格式化日期
 const formatDate = (dateStr) => {
   if (!dateStr) return '-';
   return dateStr.substring(0, 19).replace('T', ' ');
 };
 
-/**
- * 获取纯文本长度
- */
+// 工具：预览长度
 const getContentTextLength = (htmlContent) => {
   if (!htmlContent) return 0;
-  const text = htmlContent.replace(/<[^>]*>/g, '');
-  return text.replace(/\s+/g, '').length;
+  return htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, '').length;
 };
 
-/**
- * 政策内容预览（截断）
- */
 const getContentPreview = (htmlContent) => {
   if (!htmlContent) return '';
   const text = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
-  return text.length > 20 ? `${text.substring(0, 20)}...` : text;
+  return text.length > 25 ? `${text.substring(0, 25)}...` : text;
 };
 
-// ========== 文件上传逻辑 (对接后端接口) ==========
-/**
- * 核心逻辑：直接调用后端 /upload 接口上传原始文件
- */
-const uploadToMinIO = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const res = await uploadFile(formData);
-    if (res.code === 200) {
-      // res.data 是后端返回的 MinIO 访问链接
-      return res.data;
-    } else {
-      throw new Error(res.message || '文件上传失败');
-    }
-  } catch (error) {
-    ElMessage.error(`上传失败：${error.message}`);
-    throw error;
-  }
-};
-
-// ========== 富文本编辑器配置 ==========
-const editorOption = {
-  theme: 'snow',
-  placeholder: '请输入政策内容...',
-  modules: {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{header: 1}, {header: 2}],
-      [{list: 'ordered'}, {list: 'bullet'}],
-      [{script: 'sub'}, {script: 'super'}],
-      [{indent: '-1'}, {indent: '+1'}],
-      [{direction: 'rtl'}],
-      [{size: ['small', false, 'large', 'huge']}],
-      [{header: [1, 2, 3, 4, 5, 6, false]}],
-      [{color: []}, {background: []}],
-      [{font: []}],
-      [{align: []}],
-      ['clean'],
-      ['link', 'image', 'video'],
-    ],
-  },
-};
-
-/**
- * 核心函数：编辑器初始化
- * 包含了：工具栏点击拦截、粘贴拦截、拖拽拦截
- */
-const handleQuillInit = (editor) => {
-  quillInstance = editor;
-  const toolbar = editor.getModule('toolbar');
-
-  // 1. 拦截工具栏【图片】按钮
-  toolbar.addHandler('image', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        ElMessage.info('正在上传图片...');
-        const url = await uploadToMinIO(file);
-        const range = editor.getSelection() || {index: editor.getLength()};
-        editor.insertEmbed(range.index, 'image', url);
-        editor.setSelection(range.index + 1);
-        ElMessage.success('图片上传成功');
-      } catch (err) {
-        console.error('图片上传异常', err);
-      }
-    };
-    input.click();
-  });
-
-  // 2. 拦截工具栏【视频】按钮
-  toolbar.addHandler('video', () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.onchange = async (e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      try {
-        ElMessage.info('正在上传视频...');
-        const url = await uploadToMinIO(file);
-        const range = editor.getSelection() || {index: editor.getLength()};
-        editor.insertEmbed(range.index, 'video', url);
-        editor.setSelection(range.index + 1);
-        ElMessage.success('视频上传成功');
-      } catch (err) {
-        console.error('视频上传异常', err);
-      }
-    };
-    input.click();
-  });
-
-  // 3. 拦截【粘贴】行为 (解决 Base64 的根源)
-  editor.root.addEventListener('paste', async (evt) => {
-    const clipboardData = evt.clipboardData || window.clipboardData;
-    if (!clipboardData) return;
-
-    const items = clipboardData.items;
-    for (let i = 0; i < items.length; i++) {
-      if (items[i].type.indexOf('image') !== -1) {
-        // 关键：阻止浏览器默认的 Base64 插入行为
-        evt.preventDefault();
-        const file = items[i].getAsFile();
-        try {
-          ElMessage.info('正在处理粘贴的图片...');
-          const url = await uploadToMinIO(file);
-          const range = editor.getSelection() || {index: editor.getLength()};
-          editor.insertEmbed(range.index, 'image', url);
-          editor.setSelection(range.index + 1);
-          ElMessage.success('图片已自动上传至服务器');
-        } catch (err) {
-          console.error('粘贴上传失败', err);
-        }
-      }
-    }
-  }, false);
-
-  // 4. 拦截【拖拽】行为
-  editor.root.addEventListener('drop', async (evt) => {
-    const files = evt.dataTransfer.files;
-    if (files.length > 0) {
-      evt.preventDefault();
-      for (const file of files) {
-        if (file.type.startsWith('image/')) {
-          try {
-            const url = await uploadToMinIO(file);
-            const range = editor.getSelection() || {index: editor.getLength()};
-            editor.insertEmbed(range.index, 'image', url);
-          } catch (err) {
-            console.error('拖拽上传失败', err);
-          }
-        }
-      }
-    }
-  }, false);
-
-  // 链接处理器（保持原样）
-  toolbar.addHandler('link', () => {
-    const range = editor.getSelection();
-    if (!range || range.length === 0) {
-      ElMessage.warning('请先选中要添加链接的文本');
-      return;
-    }
-    const url = prompt('请输入链接地址（以http/https开头）：');
-    if (!url) return;
-    const reg = /^(http|https):\/\/.+/;
-    if (!reg.test(url)) {
-      ElMessage.error('链接格式错误，请输入以http/https开头的地址');
-      return;
-    }
-    editor.format('link', url);
-  });
-};
-
-
-// ========== 业务逻辑 ==========
-/**
- * 获取政策列表
- */
+// 获取列表
 const getList = async () => {
   loading.value = true;
   try {
@@ -531,19 +334,15 @@ const getList = async () => {
     if (res.code === 200) {
       policyList.value = res.data.records || [];
       total.value = res.data.total || 0;
-    } else {
-      ElMessage.error(res.message || '查询政策列表失败');
     }
   } catch (error) {
-    ElMessage.error(`查询失败：${error.message}`);
+    ElMessage.error(`获取列表失败: ${error.message}`);
   } finally {
     loading.value = false;
   }
 };
 
-/**
- * 重置查询条件
- */
+// 重置查询
 const resetQuery = () => {
   queryParams.value = {
     pageNum: 1,
@@ -552,14 +351,11 @@ const resetQuery = () => {
     policyType: '',
     publisherName: '',
     content: '',
-    policyTypeName: '',
+    policyTypeName: ''
   };
   getList();
 };
 
-/**
- * 分页处理
- */
 const handleSizeChange = (val) => {
   queryParams.value.pageSize = val;
   getList();
@@ -569,21 +365,19 @@ const handleCurrentChange = (val) => {
   getList();
 };
 
-/**
- * 新增政策
- */
+// 新增
 const handleAdd = () => {
-  const userInfo = getCurrentUserInfo();
+  const user = getCurrentUserInfo();
   form.value = {
     id: '',
     title: '',
     policyType: '',
-    publisherId: userInfo.id,
-    publisherName: userInfo.name,
+    publisherId: user.id,
+    publisherName: user.name,
     content: '',
     publishTime: '',
     isTop: 0,
-    isShow: 1,
+    isShow: 1
   };
   dialogTitle.value = '新增政策';
   open.value = true;
@@ -592,112 +386,125 @@ const handleAdd = () => {
   });
 };
 
-/**
- * 修改政策
- */
+// 修改
 const handleUpdate = (row) => {
-  const userInfo = getCurrentUserInfo();
-  form.value = {
-    id: row.id,
-    title: row.title,
-    policyType: row.policyType,
-    publisherId: row.publisherId || userInfo.id,
-    publisherName: row.publisherName || userInfo.name,
-    content: row.content,
-    publishTime: row.publishTime ? formatDate(row.publishTime) : '',
-    isTop: row.isTop,
-    isShow: row.isShow,
-  };
+  form.value = {...row, publishTime: row.publishTime ? formatDate(row.publishTime) : ''};
   dialogTitle.value = '修改政策';
   open.value = true;
+  nextTick(() => {
+    if (policyFormRef.value) policyFormRef.value.clearValidate();
+  });
 };
 
-/**
- * 修改置顶状态
- */
+// 状态切换：置顶（核心优化：仅更新当前行，不刷新全量列表）
 const handleTopChange = async (row) => {
+  // 保存原始状态，用于异常回滚
+  const oldTopStatus = row.isTop;
   try {
     const res = await changePolicyTopStatus(row.id, row.isTop);
     if (res.code === 200) {
-      ElMessage.success(row.isTop ? '置顶成功' : '取消置顶成功');
+      ElMessage.success('置顶状态修改成功');
+      // 仅更新当前行数据，表格只重渲染这一行
+      const targetIndex = policyList.value.findIndex(item => item.id === row.id);
+      if (targetIndex !== -1) {
+        // 深拷贝避免直接修改响应式数据导致的异常
+        policyList.value[targetIndex] = {
+          ...policyList.value[targetIndex],
+          isTop: row.isTop,
+          updateTime: new Date().toISOString() // 可选：更新修改时间
+        };
+      }
     } else {
-      ElMessage.error(res.message || '操作失败');
-      row.isTop = row.isTop === 1 ? 0 : 1;
+      // 接口失败时回滚开关状态
+      row.isTop = oldTopStatus;
+      ElMessage.error(res.message || '置顶状态修改失败');
     }
-  } catch (error) {
-    ElMessage.error('修改失败');
-    row.isTop = row.isTop === 1 ? 0 : 1;
+  } catch (e) {
+    // 网络异常时回滚开关状态
+    row.isTop = oldTopStatus;
+    ElMessage.error('网络异常，置顶状态修改失败');
+    console.error('置顶状态修改异常：', e);
   }
 };
 
-/**
- * 修改显示状态
- */
+// 状态切换：显示（核心优化：仅更新当前行，不刷新全量列表）
 const handleShowChange = async (row) => {
+  // 保存原始状态，用于异常回滚
+  const oldShowStatus = row.isShow;
   try {
     const res = await changePolicyShowStatus(row.id, row.isShow);
     if (res.code === 200) {
-      ElMessage.success(row.isShow ? '显示成功' : '隐藏成功');
+      ElMessage.success('显示状态修改成功');
+      // 仅更新当前行数据，表格只重渲染这一行
+      const targetIndex = policyList.value.findIndex(item => item.id === row.id);
+      if (targetIndex !== -1) {
+        policyList.value[targetIndex] = {
+          ...policyList.value[targetIndex],
+          isShow: row.isShow,
+          delFlag: row.isShow === 0 ? 1 : 0, // 同步状态标签的关联字段
+          updateTime: new Date().toISOString() // 可选：更新修改时间
+        };
+      }
     } else {
-      ElMessage.error(res.message || '操作失败');
-      row.isShow = row.isShow === 1 ? 0 : 1;
+      // 接口失败时回滚开关状态
+      row.isShow = oldShowStatus;
+      ElMessage.error(res.message || '显示状态修改失败');
     }
-  } catch (error) {
-    ElMessage.error('修改失败');
-    row.isShow = row.isShow === 1 ? 0 : 1;
+  } catch (e) {
+    // 网络异常时回滚开关状态
+    row.isShow = oldShowStatus;
+    ElMessage.error('网络异常，显示状态修改失败');
+    console.error('显示状态修改异常：', e);
   }
 };
 
-/**
- * 删除政策
- */
+// 删除
 const handleDelete = (row) => {
-  ElMessageBox.confirm(`确认删除政策【${row.title}】？`, '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(async () => {
+  ElMessageBox.confirm(`确定删除政策【${row.title}】吗？`, '警告', {type: 'warning'}).then(async () => {
     const res = await deletePolicy(row.id);
     if (res.code === 200) {
       ElMessage.success('删除成功');
+      // 删除操作仍需刷新列表，因为行数据要移除
       getList();
     }
   });
 };
 
-/**
- * 提交表单 (新增或更新)
- */
-const submitForm = async () => {
-  if (!policyFormRef.value) return;
-
-  // 提交前最后同步一次编辑器 HTML 到 form.content
-  if (quillInstance) {
-    form.value.content = quillInstance.root.innerHTML;
-  }
-
+// 批量恢复隐藏
+const handleBatchShowHidden = async () => {
   try {
-    await policyFormRef.value.validate();
-
-    // 提交数据
-    const submitData = {...form.value};
-    const res = submitData.id ? await updatePolicy(submitData) : await addPolicy(submitData);
-
+    const ids = await getHiddenPolicyIds().then(res => res.data || []);
+    if (ids.length === 0) return ElMessage.info('暂无隐藏政策');
+    await ElMessageBox.confirm(`确定恢复 ${ids.length} 条政策吗？`, '提示');
+    const res = await batchShowPolicies(ids);
     if (res.code === 200) {
-      ElMessage.success('保存成功');
-      open.value = false;
+      ElMessage.success('恢复成功');
+      // 批量操作涉及多行变更，仍需刷新列表
       getList();
-    } else {
-      ElMessage.error(res.message || '保存失败');
     }
-  } catch (error) {
-    console.warn('校验不通过', error);
+  } catch (e) {
+    if (e !== 'cancel') ElMessage.error('操作失败');
   }
 };
 
-/**
- * 查看详情
- */
+// 提交表单
+const submitForm = async () => {
+  if (!policyFormRef.value) return;
+  await policyFormRef.value.validate(async (valid) => {
+    if (valid) {
+      const res = form.value.id ? await updatePolicy(form.value) : await addPolicy(form.value);
+      if (res.code === 200) {
+        ElMessage.success('保存成功');
+        open.value = false;
+        // 新增/修改操作仍需刷新列表，确保数据最新
+        getList();
+      } else {
+        ElMessage.error(res.message);
+      }
+    }
+  });
+};
+
 const viewContentDetail = (row) => {
   if (getContentTextLength(row.content) > 20) {
     currentContent.value = row.content;
@@ -705,14 +512,9 @@ const viewContentDetail = (row) => {
   }
 };
 
-/**
- * 获取下拉框选项
- */
 const getPolicyTypeList = async () => {
   const res = await getPolicyTypeOptions();
-  if (res.code === 200) {
-    policyTypeOptions.value = res.data || [];
-  }
+  if (res.code === 200) policyTypeOptions.value = res.data || [];
 };
 
 onMounted(() => {
@@ -722,7 +524,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 列表内容省略 */
+.app-container {
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 84px);
+}
+
 .content-ellipsis {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -730,41 +536,43 @@ onMounted(() => {
   overflow: hidden;
   word-break: break-all;
   font-size: 13px;
-  color: #4b5563;
+  color: #606266;
+  line-height: 1.5;
 }
 
-/* 编辑器容器样式 */
-.editor-container {
-  width: 100%;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-}
-
-.editor-container :deep(.ql-editor) {
-  min-height: 300px;
-}
-
-.editor-container :deep(.ql-container) {
-  font-size: 14px;
-}
-
-/* 可点击样式 */
 .content-wrapper {
-  padding: 5px;
-  transition: all 0.2s;
+  padding: 8px;
+  border-radius: 4px;
 }
 
 .clickable-content {
   cursor: pointer;
-  color: #409eff;
+  background-color: #ecf5ff;
 }
 
-/* 详情弹窗图片视频自适应 */
-.content-detail :deep(img),
-.content-detail :deep(video) {
+.clickable-content:hover {
+  background-color: #d9ecff;
+}
+
+.content-detail :deep(img) {
   max-width: 100%;
   height: auto;
   display: block;
-  margin: 10px 0;
+  margin: 10px auto;
+}
+
+.table-card {
+  margin-top: 10px;
+}
+
+:deep(.el-table__header) {
+  th {
+    background-color: #f8f9fa !important;
+  }
+}
+
+/* 可选：优化开关切换时的视觉体验 */
+:deep(.el-switch) {
+  transition: all 0.2s ease;
 }
 </style>
