@@ -31,7 +31,6 @@
           <el-menu-item index="/enterprise/list">企业列表</el-menu-item>
         </el-sub-menu>
 
-        <!-- 包抓联管理子菜单（新增问题办理子项） -->
         <el-sub-menu index="smeple">
           <template #title>
             <el-icon>
@@ -43,7 +42,6 @@
           <el-menu-item index="/smeple/handle">问题办理</el-menu-item>
         </el-sub-menu>
 
-        <!-- 新增：政策发布管理子菜单 -->
         <el-sub-menu index="policy">
           <template #title>
             <el-icon>
@@ -53,6 +51,20 @@
           </template>
           <el-menu-item index="/policy/list">政策发布列表</el-menu-item>
         </el-sub-menu>
+
+        <!-- =================== 新增：通知管理 =================== -->
+        <el-sub-menu index="notice">
+          <template #title>
+            <el-icon>
+              <Bell/>
+            </el-icon>
+            <span>通知管理</span>
+          </template>
+          <el-menu-item index="/notice/list">通知列表</el-menu-item>
+          <el-menu-item index="/notice/form">发布通知</el-menu-item> <!-- 新增：发布通知菜单 -->
+          <el-menu-item index="/notice/my">我的通知</el-menu-item>
+        </el-sub-menu>
+        <!-- ====================================================== -->
 
         <el-sub-menu index="user">
           <template #title>
@@ -103,17 +115,15 @@
       </el-menu>
     </el-aside>
 
-    <!-- 主体部分（无修改） -->
+    <!-- 主体 -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
-          <!-- 折叠按钮 -->
           <el-icon class="menu-toggle" @click="toggleSidebar">
             <Fold v-if="!isCollapse"/>
             <Expand v-else/>
           </el-icon>
 
-          <!-- 美化后的面包屑 -->
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
               <el-breadcrumb-item to="/dashboard">
@@ -136,7 +146,19 @@
           </div>
         </div>
 
-        <div class="header-right" style="width: 200px">
+        <!-- =================== 新增：通知红点 =================== -->
+        <div class="header-right" style="width: 260px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
+
+          <el-badge
+              :value="unreadCount"
+              :hidden="unreadCount === 0"
+              class="notice-badge"
+          >
+            <el-icon class="notice-icon" @click="goMyNotice">
+              <Bell/>
+            </el-icon>
+          </el-badge>
+
           <el-dropdown>
             <span class="user-info">
               <el-avatar size="32" src="/avatar.png"/>
@@ -148,7 +170,10 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+
         </div>
+        <!-- ====================================================== -->
+
       </el-header>
 
       <el-main class="layout-content">
@@ -159,12 +184,13 @@
 </template>
 
 <script setup>
-import {ref, computed} from 'vue'
+import {ref, computed, onMounted} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
+import request from '@/utils/request'
 import {
   HomeFilled, User, UserFilled, Setting,
-  Menu, Expand, OfficeBuilding, Files, Fold, Document
+  Expand, OfficeBuilding, Files, Fold, Document, Bell
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -176,19 +202,37 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-// 面包屑层级数据（新增政策发布面包屑）
+/* ================= 新增：未读数量 ================= */
+const unreadCount = ref(0)
+
+const getUnreadCount = async () => {
+  try {
+    const res = await request({
+      url: '/notice/unread/count',
+      method: 'get'
+    })
+    unreadCount.value = res.data || 0
+  } catch (e) {
+    console.error('获取未读通知失败', e)
+  }
+}
+
+const goMyNotice = () => {
+  router.push('/notice/my')
+}
+
+onMounted(() => {
+  getUnreadCount()
+})
+/* =============================================== */
+
+// 面包屑
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
-  // 包抓联管理面包屑（包含列表和问题办理）
-  if (p.startsWith('/smeple')) {
-    if (p === '/smeple/handle') {
-      return [{title: '包抓联管理', path: '/smeple/list'}]
-    }
-    return [{title: '包抓联管理', path: '/smeple/list'}]
-  }
-  // 新增：政策发布管理面包屑
+  if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
   if (p.startsWith('/policy')) return [{title: '政策发布管理', path: '/policy/list'}]
+  if (p.startsWith('/notice')) return [{title: '通知管理', path: '/notice/my'}]
   if (p.startsWith('/user')) return [{title: '用户管理', path: '/user/list'}]
   if (p.startsWith('/role')) return [{title: '系统管理', path: '/role/list'}]
   if (p.startsWith('/dept')) return [{title: '系统管理', path: '/dept/list'}]
@@ -196,14 +240,17 @@ const breadcrumbList = computed(() => {
   return []
 })
 
-// 当前页面标题（新增政策发布标题）
+// 当前页面标题
 const currentPageTitle = computed(() => {
   const p = route.path
   if (p === '/enterprise/list') return '企业列表'
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
-  // 新增：政策发布列表标题
   if (p === '/policy/list') return '政策发布列表'
+  if (p === '/notice/list') return '通知列表'
+  if (p === '/notice/form') return '发布通知' // 新增：发布通知页面标题
+  if (p === '/notice/my') return '我的通知'
+  if (p.startsWith('/notice/detail')) return '通知详情'
   if (p === '/user/list') return '用户列表'
   if (p === '/role/list') return '角色管理'
   if (p === '/dept/list') return '部门管理'
@@ -219,7 +266,6 @@ const logout = () => {
 </script>
 
 <style scoped>
-/* 样式无修改，复用原有样式 */
 .admin-layout {
   display: flex;
   height: 100vh;
@@ -275,26 +321,6 @@ const logout = () => {
   flex: 1;
 }
 
-.custom-breadcrumb {
-  font-size: 14px;
-  color: #606266;
-}
-
-.custom-breadcrumb :deep(.el-breadcrumb__item) {
-  display: flex;
-  align-items: center;
-}
-
-.custom-breadcrumb :deep(.el-breadcrumb__item:last-child) {
-  color: #409eff;
-  font-weight: 500;
-}
-
-.custom-breadcrumb :deep(.el-breadcrumb__item) .el-icon {
-  margin-right: 4px;
-  font-size: 14px;
-}
-
 .layout-content {
   background: #f5f7fa;
   flex: 1;
@@ -307,5 +333,14 @@ const logout = () => {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+}
+
+.notice-icon {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.notice-badge {
+  cursor: pointer;
 }
 </style>

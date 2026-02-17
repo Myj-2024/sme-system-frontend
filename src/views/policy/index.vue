@@ -110,7 +110,7 @@
             <el-tag v-else type="success">正常</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="300" align="center">
+        <el-table-column label="操作" width="270" align="center">
           <template #default="scope">
             <el-switch
                 v-model="scope.row.isTop"
@@ -118,7 +118,8 @@
                 :inactive-value="0"
                 active-text="置顶"
                 @change="handleTopChange(scope.row)"
-                style="margin-right: 8px;"
+                style="margin-right: 10px;"
+                size="small"
             />
             <el-switch
                 v-model="scope.row.isShow"
@@ -126,11 +127,12 @@
                 :inactive-value="0"
                 active-text="显示"
                 @change="handleShowChange(scope.row)"
-                style="margin-right: 8px;"
+                style="margin-right: 10px;"
                 :disabled="scope.row.delFlag === 1"
+                size="small"
             />
-            <el-button link type="primary" @click="handleUpdate(scope.row)">修改</el-button>
-            <el-button link type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <el-button link type="primary" @click="handleUpdate(scope.row)" size="small">修改</el-button>
+            <el-button link type="danger" @click="handleDelete(scope.row)" size="small">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -149,7 +151,7 @@
     </el-card>
 
     <el-dialog title="政策内容详情" v-model="contentDetailVisible" width="800px" append-to-body>
-      <div class="content-detail" v-html="currentContent"></div>
+      <div class="content-detail" v-html="processedContent"></div>
       <template #footer>
         <el-button @click="contentDetailVisible = false">关闭</el-button>
       </template>
@@ -259,6 +261,7 @@ const form = ref({
 // 详情弹窗
 const contentDetailVisible = ref(false);
 const currentContent = ref('');
+const processedContent = ref(''); // 处理后的内容，用于渲染
 
 // 自定义校验逻辑：判断富文本是否为空
 const isEditorEmpty = (html) => {
@@ -314,16 +317,45 @@ const formatDate = (dateStr) => {
   return dateStr.substring(0, 19).replace('T', ' ');
 };
 
-// 工具：预览长度
+// 修复核心：计算内容长度时，包含图片/视频等媒体元素（解决纯媒体内容无法点击的问题）
 const getContentTextLength = (htmlContent) => {
   if (!htmlContent) return 0;
-  return htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, '').length;
+  // 1. 先计算纯文本长度
+  const textLength = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, '').length;
+  // 2. 检测是否包含图片/视频标签（有则额外加长度，确保能触发点击）
+  const hasMedia = htmlContent.includes('<img') || htmlContent.includes('<video') || htmlContent.includes('<iframe');
+  // 3. 最终长度 = 文本长度 + 媒体元素补偿值（21确保超过20的阈值）
+  return textLength + (hasMedia ? 21 : 0);
 };
 
+// 修复预览逻辑：纯媒体内容时显示提示文字
 const getContentPreview = (htmlContent) => {
   if (!htmlContent) return '';
-  const text = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ');
+  // 提取纯文本
+  const text = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  // 检测媒体元素
+  const hasMedia = htmlContent.includes('<img') || htmlContent.includes('<video') || htmlContent.includes('<iframe');
+
+  // 纯媒体内容（无文字）：显示提示
+  if (text === '' && hasMedia) {
+    return '【包含图片/视频等媒体内容，点击查看详情】';
+  }
+  // 有文字：正常截断
   return text.length > 25 ? `${text.substring(0, 25)}...` : text;
+};
+
+// 新增：处理视频标签，添加兼容性属性
+const processVideoTags = (html) => {
+  if (!html) return '';
+  // 为所有 <video> 标签添加必要的属性
+  return html.replace(/<video([^>]*)>/g, (match, attrs) => {
+    // 如果已经有 controls 属性，就不再添加
+    if (attrs.includes('controls')) {
+      return `<video ${attrs}>`;
+    }
+    // 添加 controls、playsinline 等兼容性属性
+    return `<video ${attrs} controls playsinline preload="metadata">`;
+  });
 };
 
 // 获取列表
@@ -508,6 +540,8 @@ const submitForm = async () => {
 const viewContentDetail = (row) => {
   if (getContentTextLength(row.content) > 20) {
     currentContent.value = row.content;
+    // 处理视频标签，添加兼容性属性
+    processedContent.value = processVideoTags(row.content);
     contentDetailVisible.value = true;
   }
 };
@@ -559,6 +593,21 @@ onMounted(() => {
   height: auto;
   display: block;
   margin: 10px auto;
+}
+
+/* 适配视频/iframe样式 */
+.content-detail :deep(video),
+.content-detail :deep(iframe) {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 10px auto;
+}
+
+/* 视频播放器样式优化 */
+.content-detail :deep(video) {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .table-card {

@@ -122,7 +122,7 @@ const initEditor = async () => {
     window.tinymce.init({
       target: editorRef.value,
       language: 'zh-Hans',
-      language_url: '/tinymce/langs/zh-Hans.js',
+      language_url: '/tinymce/langs/zh_CN.js',
       skin_url: '/tinymce/skins/ui/oxide',
       content_css: '/tinymce/skins/content/default/content.min.css',
       menubar: false,
