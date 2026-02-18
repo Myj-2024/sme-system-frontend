@@ -42,6 +42,13 @@ const routes = [
                     activeMenu: '/smeple/list'
                 }
             },
+            // dept-user 页面归属调整到 smeple 路径下
+            {
+                path: 'smeple/dept-user',
+                name: 'DeptUser',
+                component: () => import('@/views/smePle/dpet-user.vue'),
+                meta: { title: '部门人员管理', activeMenu: '/smeple/list' }
+            },
             {
                 path: 'policy/list',
                 name: 'PolicyList',
@@ -99,12 +106,6 @@ const routes = [
                 name: 'RoleList',
                 component: () => import('@/views/system/role.vue'),
                 meta: { title: '角色管理' }
-            },
-            {
-                path: 'dept/list',
-                name: 'DeptList',
-                component: () => import('@/views/dept/index.vue'),
-                meta: { title: '部门人员管理', activeMenu: '/smeple/list' }
             },
             {
                 path: 'dict/list',

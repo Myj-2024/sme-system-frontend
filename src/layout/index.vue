@@ -21,7 +21,6 @@
           <span>首页</span>
         </el-menu-item>
 
-        <!-- 系统管理移到首页下方 -->
         <el-sub-menu index="system">
           <template #title>
             <el-icon>
@@ -63,8 +62,7 @@
             </el-icon>
             <span>包抓联管理</span>
           </template>
-          <!-- 部门人员管理移到包抓联列表上方 -->
-          <el-menu-item index="/dept/list">
+          <el-menu-item index="/smeple/dept-user">
             <el-icon><OfficeBuilding/></el-icon>
             <span>部门人员管理</span>
           </el-menu-item>
@@ -78,7 +76,6 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 政策发布管理修改为政策管理 -->
         <el-sub-menu index="policy">
           <template #title>
             <el-icon>
@@ -92,7 +89,6 @@
           </el-menu-item>
         </el-sub-menu>
 
-        <!-- 通知管理 -->
         <el-sub-menu index="notice">
           <template #title>
             <el-icon>
@@ -192,7 +188,7 @@ import request from '@/utils/request'
 import {
   HomeFilled, User, UserFilled, Setting,
   Expand, OfficeBuilding, Files, Fold, Document, Bell,
-  List, Edit, Message // 新增二级菜单图标
+  List, Edit, Message
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -227,12 +223,12 @@ onMounted(() => {
   getUnreadCount()
 })
 
-// 面包屑 - 同步修改政策管理的面包屑显示
+// 面包屑
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
   if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
-  if (p.startsWith('/policy')) return [{title: '政策管理', path: '/policy/list'}] // 修改为政策管理
+  if (p.startsWith('/policy')) return [{title: '政策管理', path: '/policy/list'}]
   if (p.startsWith('/notice')) return [{title: '通知管理', path: '/notice/my'}]
   if (p.startsWith('/user') || p.startsWith('/role') || p.startsWith('/dict')) return [{title: '系统管理', path: '/user/list'}]
   return []
@@ -244,7 +240,7 @@ const currentPageTitle = computed(() => {
   if (p === '/enterprise/list') return '企业列表'
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
-  if (p === '/dept/list') return '部门人员管理'
+  if (p === '/smeple/dept-user') return '部门人员管理' // 匹配新路由
   if (p === '/policy/list') return '政策列表'
   if (p === '/notice/list') return '通知列表'
   if (p === '/notice/form') return '发布通知'

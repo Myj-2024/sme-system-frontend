@@ -138,8 +138,8 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '@/utils/request'
-import { listDept, addDept, updateDept, deleteDept, changeDeptStatus, pageDept } from '@/api/dept'
+import request from '@/utils/request.js'
+import { listDept, addDept, updateDept, deleteDept, changeDeptStatus, pageDept } from '@/api/dept.js'
 import { checkDeptBind } from '@/api/smeple.js'
 
 const loading = ref(false)
