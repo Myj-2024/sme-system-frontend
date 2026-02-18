@@ -102,7 +102,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { listDict, addDict, updateDict, delDict, changeDictStatus } from '@/api/dict'
+import { listDict, addDict, updateDict, delDict, changeDictStatus } from '@/api/dict.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()

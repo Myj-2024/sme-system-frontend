@@ -21,6 +21,28 @@
           <span>首页</span>
         </el-menu-item>
 
+        <!-- 系统管理移到首页下方 -->
+        <el-sub-menu index="system">
+          <template #title>
+            <el-icon>
+              <Setting/>
+            </el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/user/list">
+            <el-icon><User/></el-icon>
+            <span>用户管理</span>
+          </el-menu-item>
+          <el-menu-item index="/role/list">
+            <el-icon><UserFilled/></el-icon>
+            <span>角色管理</span>
+          </el-menu-item>
+          <el-menu-item index="/dict/list">
+            <el-icon><Files/></el-icon>
+            <span>字典管理</span>
+          </el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="enterprise">
           <template #title>
             <el-icon>
@@ -28,7 +50,10 @@
             </el-icon>
             <span>企业管理</span>
           </template>
-          <el-menu-item index="/enterprise/list">企业列表</el-menu-item>
+          <el-menu-item index="/enterprise/list">
+            <el-icon><List/></el-icon>
+            <span>企业列表</span>
+          </el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="smeple">
@@ -38,21 +63,36 @@
             </el-icon>
             <span>包抓联管理</span>
           </template>
-          <el-menu-item index="/smeple/list">包抓联列表</el-menu-item>
-          <el-menu-item index="/smeple/handle">问题办理</el-menu-item>
+          <!-- 部门人员管理移到包抓联列表上方 -->
+          <el-menu-item index="/dept/list">
+            <el-icon><OfficeBuilding/></el-icon>
+            <span>部门人员管理</span>
+          </el-menu-item>
+          <el-menu-item index="/smeple/list">
+            <el-icon><List/></el-icon>
+            <span>包抓联列表</span>
+          </el-menu-item>
+          <el-menu-item index="/smeple/handle">
+            <el-icon><Edit/></el-icon>
+            <span>问题办理</span>
+          </el-menu-item>
         </el-sub-menu>
 
+        <!-- 政策发布管理修改为政策管理 -->
         <el-sub-menu index="policy">
           <template #title>
             <el-icon>
               <Document/>
             </el-icon>
-            <span>政策发布管理</span>
+            <span>政策管理</span>
           </template>
-          <el-menu-item index="/policy/list">政策发布列表</el-menu-item>
+          <el-menu-item index="/policy/list">
+            <el-icon><List/></el-icon>
+            <span>政策发布列表</span>
+          </el-menu-item>
         </el-sub-menu>
 
-        <!-- =================== 新增：通知管理 =================== -->
+        <!-- 通知管理 -->
         <el-sub-menu index="notice">
           <template #title>
             <el-icon>
@@ -60,58 +100,20 @@
             </el-icon>
             <span>通知管理</span>
           </template>
-          <el-menu-item index="/notice/list">通知列表</el-menu-item>
-          <el-menu-item index="/notice/form">发布通知</el-menu-item> <!-- 新增：发布通知菜单 -->
-          <el-menu-item index="/notice/my">我的通知</el-menu-item>
-        </el-sub-menu>
-        <!-- ====================================================== -->
-
-        <el-sub-menu index="user">
-          <template #title>
-            <el-icon>
-              <User/>
-            </el-icon>
-            <span>用户管理</span>
-          </template>
-          <el-menu-item index="/user/list">用户列表</el-menu-item>
+          <el-menu-item index="/notice/list">
+            <el-icon><List/></el-icon>
+            <span>通知列表</span>
+          </el-menu-item>
+          <el-menu-item index="/notice/form">
+            <el-icon><Edit/></el-icon>
+            <span>发布通知</span>
+          </el-menu-item>
+          <el-menu-item index="/notice/my">
+            <el-icon><Message/></el-icon>
+            <span>我的通知</span>
+          </el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="role">
-          <template #title>
-            <el-icon>
-              <UserFilled/>
-            </el-icon>
-            <span>角色管理</span>
-          </template>
-          <el-menu-item index="/role/list">角色列表</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="dept">
-          <template #title>
-            <el-icon>
-              <OfficeBuilding/>
-            </el-icon>
-            <span>部门管理</span>
-          </template>
-          <el-menu-item index="/dept/list">部门人员列表</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="dict">
-          <template #title>
-            <el-icon>
-              <Files/>
-            </el-icon>
-            <span>字典管理</span>
-          </template>
-          <el-menu-item index="/dict/list">字典列表</el-menu-item>
-        </el-sub-menu>
-
-        <el-menu-item index="/system/setting">
-          <el-icon>
-            <Setting/>
-          </el-icon>
-          <span>系统设置</span>
-        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -146,7 +148,7 @@
           </div>
         </div>
 
-        <!-- =================== 新增：通知红点 =================== -->
+        <!-- 通知红点 -->
         <div class="header-right" style="width: 260px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
 
           <el-badge
@@ -172,7 +174,6 @@
           </el-dropdown>
 
         </div>
-        <!-- ====================================================== -->
 
       </el-header>
 
@@ -190,7 +191,8 @@ import {useUserStore} from '@/store/userStore'
 import request from '@/utils/request'
 import {
   HomeFilled, User, UserFilled, Setting,
-  Expand, OfficeBuilding, Files, Fold, Document, Bell
+  Expand, OfficeBuilding, Files, Fold, Document, Bell,
+  List, Edit, Message // 新增二级菜单图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -202,7 +204,7 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-/* ================= 新增：未读数量 ================= */
+/* 未读数量 */
 const unreadCount = ref(0)
 
 const getUnreadCount = async () => {
@@ -224,19 +226,15 @@ const goMyNotice = () => {
 onMounted(() => {
   getUnreadCount()
 })
-/* =============================================== */
 
-// 面包屑
+// 面包屑 - 同步修改政策管理的面包屑显示
 const breadcrumbList = computed(() => {
   const p = route.path
   if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
   if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
-  if (p.startsWith('/policy')) return [{title: '政策发布管理', path: '/policy/list'}]
+  if (p.startsWith('/policy')) return [{title: '政策管理', path: '/policy/list'}] // 修改为政策管理
   if (p.startsWith('/notice')) return [{title: '通知管理', path: '/notice/my'}]
-  if (p.startsWith('/user')) return [{title: '用户管理', path: '/user/list'}]
-  if (p.startsWith('/role')) return [{title: '系统管理', path: '/role/list'}]
-  if (p.startsWith('/dept')) return [{title: '系统管理', path: '/dept/list'}]
-  if (p.startsWith('/dict')) return [{title: '系统管理', path: '/dict/list'}]
+  if (p.startsWith('/user') || p.startsWith('/role') || p.startsWith('/dict')) return [{title: '系统管理', path: '/user/list'}]
   return []
 })
 
@@ -246,16 +244,16 @@ const currentPageTitle = computed(() => {
   if (p === '/enterprise/list') return '企业列表'
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
+  if (p === '/dept/list') return '部门人员管理'
   if (p === '/policy/list') return '政策发布列表'
   if (p === '/notice/list') return '通知列表'
-  if (p === '/notice/form') return '发布通知' // 新增：发布通知页面标题
+  if (p === '/notice/form') return '发布通知'
   if (p === '/notice/my') return '我的通知'
   if (p.startsWith('/notice/detail')) return '通知详情'
-  if (p === '/user/list') return '用户列表'
+  if (p === '/user/list') return '用户管理'
   if (p === '/role/list') return '角色管理'
-  if (p === '/dept/list') return '部门管理'
-  if (p === '/dict/list') return '字典列表'
-  if (p === '/system/setting') return '系统设置'
+  if (p === '/dict/list') return '字典管理'
+  if (p.startsWith('/dict/data')) return '字典数据'
   return ''
 })
 

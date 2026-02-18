@@ -148,9 +148,9 @@
 <script setup>
 import {ref, reactive, onMounted, computed} from 'vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import userApi from '@/api/user'
-import { selectItemList } from '@/api/dictItem'
-import {roleApi} from '@/api/role'
+import userApi from '@/api/user.js'
+import { selectItemList } from '@/api/dictItem.js'
+import {roleApi} from '@/api/role.js'
 import {Edit, Delete, Plus, UserFilled} from '@element-plus/icons-vue'
 
 const currentUserId = ref('')

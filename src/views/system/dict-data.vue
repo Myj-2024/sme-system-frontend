@@ -100,7 +100,7 @@ import {
   updateDictItem,
   delDictItem,
   selectItemList // 新增：导入分页查询接口
-} from '@/api/dictItem'
+} from '@/api/dictItem.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()

@@ -110,8 +110,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import roleApi from '@/api/role'
-import permissionApi from '@/api/permission'
+import roleApi from '@/api/role.js'
+import permissionApi from '@/api/permission.js'
 import { Edit, Delete, Plus } from '@element-plus/icons-vue'
 
 const loading = ref(false)

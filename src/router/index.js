@@ -19,13 +19,13 @@ const routes = [
                 path: 'enterprise/list',
                 name: 'EnterpriseList',
                 component: () => import('@/views/enterprise/index.vue'),
-                meta: { title: '企业管理' }
+                meta: { title: '企业列表' }
             },
             {
                 path: 'smeple/list',
                 name: 'SmePleList',
                 component: () => import('@/views/smePle/index.vue'),
-                meta: { title: '包抓联管理' }
+                meta: { title: '包抓联列表' }
             },
             {
                 path: 'smeple/handle',
@@ -46,7 +46,7 @@ const routes = [
                 path: 'policy/list',
                 name: 'PolicyList',
                 component: () => import('@/views/policy/index.vue'),
-                meta: { title: '政策发布管理' }
+                meta: { title: '政策发布列表' } // 保持子菜单标题不变，仅修改一级菜单名称
             },
 
             // 通知模块
@@ -87,34 +87,35 @@ const routes = [
                 }
             },
 
+            // 系统管理相关（移动到system目录）
             {
                 path: 'user/list',
                 name: 'UserList',
-                component: () => import('@/views/user/index.vue'),
+                component: () => import('@/views/system/user.vue'),
                 meta: { title: '用户管理' }
             },
             {
                 path: 'role/list',
                 name: 'RoleList',
-                component: () => import('@/views/role/index.vue'),
+                component: () => import('@/views/system/role.vue'),
                 meta: { title: '角色管理' }
             },
             {
                 path: 'dept/list',
                 name: 'DeptList',
                 component: () => import('@/views/dept/index.vue'),
-                meta: { title: '部门管理' }
+                meta: { title: '部门人员管理', activeMenu: '/smeple/list' }
             },
             {
                 path: 'dict/list',
                 name: 'DictList',
-                component: () => import('@/views/dict/index.vue'),
+                component: () => import('@/views/system/dict.vue'),
                 meta: { title: '字典管理' }
             },
             {
                 path: 'dict/data/:dictCode',
                 name: 'DictData',
-                component: () => import('@/views/dict/data.vue'),
+                component: () => import('@/views/system/dict-data.vue'),
                 meta: { title: '字典数据', activeMenu: '/dict/list' }
             }
         ]
@@ -127,12 +128,6 @@ const router = createRouter({
     routes
 })
 
-/**
- * 修复点：
- * 1. 不再用 userInfo.id 判断
- * 2. 不再 next({...to, replace:true}) 防止递归
- * 3. 严格 token 判断
- */
 router.beforeEach(async (to, from, next) => {
     const userStore = useUserStore()
     const token = sessionStorage.getItem('token')
@@ -145,7 +140,6 @@ router.beforeEach(async (to, from, next) => {
         return next('/login')
     }
 
-    // 如果 store 里还没用户信息
     if (!userStore.userInfo || !userStore.userInfo.id) {
         try {
             await userStore.fetchUserInfo()
@@ -157,6 +151,5 @@ router.beforeEach(async (to, from, next) => {
 
     next()
 })
-
 
 export default router
