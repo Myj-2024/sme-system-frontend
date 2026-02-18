@@ -1,12 +1,7 @@
 <template>
   <div class="policy-container">
-    <!-- 面包屑导航 -->
-    <div class="breadcrumb">
-      <span>首页 / 通知管理 / 通知发布列表</span>
-    </div>
-
     <!-- 查询区域 -->
-    <div class="search-form">
+    <el-card class="filter-card" shadow="never">
       <el-form :model="queryParams" inline>
         <el-form-item label="通知标题">
           <el-input
@@ -63,10 +58,10 @@
           <!-- 删除：一键显示已隐藏通知按钮 -->
         </el-form-item>
       </el-form>
-    </div>
+    </el-card>
 
     <!-- 表格区域 -->
-    <div class="table-wrapper">
+    <el-card class="list-card" shadow="never">
       <el-table
           :data="noticeList"
           border
@@ -74,7 +69,7 @@
           style="width: 100%"
           size="small"
       >
-        <el-table-column prop="id" label="ID" width="60" align="center" />
+        <el-table-column prop="id" label="ID" width="60" align="center"/>
         <!-- 通知标题列添加点击事件 -->
         <el-table-column prop="title" label="通知标题" min-width="200" align="center">
           <template #default="{ row }">
@@ -94,7 +89,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="publisherName" label="发布人" width="100" align="center" />
+        <el-table-column prop="publisherName" label="发布人" width="100" align="center"/>
         <!-- 通知内容列添加点击事件 -->
         <el-table-column prop="content" label="通知内容" min-width="260" align="center">
           <template #default="{ row }">
@@ -137,7 +132,8 @@
           </template>
         </el-table-column>
       </el-table>
-    </div>
+    </el-card>
+
 
     <!-- 分页 -->
     <div class="pagination">
@@ -148,9 +144,9 @@
           @change="loadNoticeList"
           style="width: 120px; margin: 0 10px;"
       >
-        <el-option label="10条/页" :value="10" />
-        <el-option label="20条/页" :value="20" />
-        <el-option label="50条/页" :value="50" />
+        <el-option label="10条/页" :value="10"/>
+        <el-option label="20条/页" :value="20"/>
+        <el-option label="50条/页" :value="50"/>
       </el-select>
       <el-pagination
           :current-page.sync="pageNum"
@@ -164,9 +160,9 @@
 </template>
 
 <script>
-import { getNoticePage, deleteNotice, updateNotice } from '@/api/notice'
+import {getNoticePage, deleteNotice, updateNotice} from '@/api/notice'
 // 导入字典项查询接口
-import { listDictItemByDictCode } from '@/api/dictItem'
+import {listDictItemByDictCode} from '@/api/dictItem'
 
 export default {
   name: 'NoticeIndex',
@@ -309,26 +305,12 @@ export default {
 
 <style scoped>
 .policy-container {
-  padding: 16px;
-  background: #fff;
-  border-radius: 4px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 60px);
 }
 
-.breadcrumb {
-  margin-bottom: 16px;
-  color: #606266;
-  font-size: 14px;
-}
-
-.search-form {
-  margin-bottom: 16px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 4px;
-}
-
-.table-wrapper {
-  margin-bottom: 16px;
+.filter-card {
+  margin-bottom: 20px;
 }
 
 .content-cell {
@@ -339,9 +321,13 @@ export default {
 }
 
 .pagination {
+  background-color: #FFFFFF;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  border: #eeeeee 1px solid;
+  padding: 10px;
+  font-size: 13px;
+  border-radius: 3px;
 }
 
 /* 新增：可点击单元格样式 */

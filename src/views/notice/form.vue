@@ -419,7 +419,6 @@ onMounted(async () => {
 
 <style scoped>
 .notice-form-container {
-  padding: 20px;
   background: #f5f7fa;
   min-height: calc(100vh - 84px);
 }
