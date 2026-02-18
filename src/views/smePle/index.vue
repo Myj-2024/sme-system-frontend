@@ -31,14 +31,14 @@
           v-loading="loading"
           border
           stripe
-          style="width: 100%; margin-top: 20px"
+          style="width: 100%; margin-top: 20px; font-size: 12px;"
           :default-sort="{prop: 'createTime', order: 'descending'}"
       >
         <!-- 序号列 -->
         <el-table-column
             label="序号"
             align="center"
-            width="80"
+            width="50"
             type="index"
             :index="(index) => (pageNum - 1) * pageSize + index + 1"
         />
@@ -47,7 +47,7 @@
             prop="leaderName"
             label="包抓领导"
             align="center"
-            min-width="100"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.leaderName || '-' }}
@@ -58,7 +58,7 @@
             prop="enterpriseName"
             label="企业名称"
             align="center"
-            min-width="150"
+            min-width="200"
         >
           <template #default="{ row }">
             {{ row.enterpriseName || '-' }}
@@ -69,7 +69,7 @@
             prop="enterpriseLeader"
             label="企业负责人"
             align="center"
-            min-width="100"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.enterpriseLeader || '-' }}
@@ -80,7 +80,7 @@
             prop="enterprisePhone"
             label="电话"
             align="center"
-            min-width="120"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.enterprisePhone || '-' }}
@@ -91,7 +91,7 @@
             prop="regAddr"
             label="注册地址"
             align="center"
-            min-width="200"
+            min-width="180"
             show-overflow-tooltip
         >
           <template #default="{ row }">
@@ -103,7 +103,7 @@
             prop="mainProduct"
             label="主要产品"
             align="center"
-            min-width="200"
+            min-width="180"
             show-overflow-tooltip
         >
           <template #default="{ row }">
@@ -115,7 +115,7 @@
             prop="classMonitor"
             label="专班班长"
             align="center"
-            min-width="100"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.classMonitor || '-' }}
@@ -126,7 +126,7 @@
             prop="classPhone"
             label="联系电话"
             align="center"
-            min-width="120"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.classPhone || '-' }}
@@ -137,7 +137,7 @@
             prop="classDeptName"
             label="专班负责单位"
             align="center"
-            min-width="150"
+            min-width="110"
         >
           <template #default="{ row }">
             {{ row.classDeptName || '-' }}
@@ -160,7 +160,7 @@
             prop="createTime"
             label="创建时间"
             align="center"
-            min-width="180"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.createTime ? formatDate(row.createTime) : '-' }}
@@ -171,14 +171,14 @@
             prop="updateTime"
             label="更新时间"
             align="center"
-            min-width="180"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.updateTime ? formatDate(row.updateTime) : '-' }}
           </template>
         </el-table-column>
         <!-- 操作列（完善编辑/删除按钮，新增样式和交互） -->
-        <el-table-column label="操作" align="center" width="200">
+        <el-table-column label="操作" align="center" width="130" fixed="right">
           <template #default="{ row }">
             <!-- 编辑按钮 -->
             <el-button

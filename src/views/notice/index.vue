@@ -60,9 +60,7 @@
           <el-button size="small" @click="resetQuery">
             <i class="el-icon-refresh-left"></i> 重置
           </el-button>
-          <el-button type="success" size="small" @click="handleShowAll">
-            <i class="el-icon-eye"></i> 一键显示已隐藏通知
-          </el-button>
+          <!-- 删除：一键显示已隐藏通知按钮 -->
         </el-form-item>
       </el-form>
     </div>
@@ -78,7 +76,7 @@
       >
         <el-table-column prop="id" label="ID" width="60" align="center" />
         <!-- 通知标题列添加点击事件 -->
-        <el-table-column prop="title" label="通知标题" width="180" align="center">
+        <el-table-column prop="title" label="通知标题" min-width="200" align="center">
           <template #default="{ row }">
             <span
                 class="clickable-cell"
@@ -98,7 +96,7 @@
 
         <el-table-column prop="publisherName" label="发布人" width="100" align="center" />
         <!-- 通知内容列添加点击事件 -->
-        <el-table-column prop="content" label="通知内容" width="210" align="center">
+        <el-table-column prop="content" label="通知内容" min-width="260" align="center">
           <template #default="{ row }">
             <div
                 class="content-cell clickable-cell"
@@ -108,37 +106,20 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column prop="publishTime" label="发布时间" width="100" align="center">
+        <el-table-column prop="publishTime" label="发布时间" width="120" align="center">
           <template #default="{ row }">
             {{ formatTime(row.publishTime) }}
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="更新时间" width="100" align="center">
+        <el-table-column prop="updateTime" label="更新时间" width="120" align="center">
           <template #default="{ row }">
             {{ formatTime(row.updateTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80" align="center" >
+        <!-- 删除：状态列 -->
+        <el-table-column label="操作" width="140" align="center">
           <template #default="{ row }">
-            <el-tag type="success" size="small">正常</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="280" align="center">
-          <template #default="{ row }">
-            <el-switch
-                v-model="row.isTop"
-                active-text="置顶"
-                @change="handleTopChange(row)"
-                style="margin-right: 10px;"
-                size="small"
-            />
-            <el-switch
-                v-model="row.isShow"
-                active-text="显示"
-                @change="handleShowChange(row)"
-                style="margin-right: 10px;"
-                size="small"
-            />
+            <!-- 删除：置顶和显示开关按钮 -->
             <el-button
                 link type="primary"
                 @click="handleEdit(row)"
@@ -260,9 +241,8 @@ export default {
         })
         this.noticeList = res.data.records || res.data.list || []
         this.total = res.data.total || this.noticeList.length
-        // 为每条数据添加isShow和isTop的本地状态（可根据后端返回调整）
+        // 删除：isShow相关的本地状态初始化逻辑
         this.noticeList.forEach(item => {
-          item.isShow = true
           if (item.isTop === undefined) item.isTop = false
         })
       } catch (error) {
@@ -288,34 +268,11 @@ export default {
       this.$router.push('/notice/add')
     },
 
-    // 一键显示已隐藏通知
-    handleShowAll() {
-      this.noticeList.forEach(item => {
-        item.isShow = true
-      })
-      this.$message.success('已显示所有通知')
-    },
+    // 删除：一键显示已隐藏通知方法
 
-    // 置顶开关变化
-    async handleTopChange(row) {
-      try {
-        await updateNotice({
-          ...row,
-          isTop: row.isTop ? 1 : 0
-        })
-        this.$message.success('置顶状态更新成功')
-      } catch (error) {
-        console.error('更新置顶状态失败:', error)
-        row.isTop = !row.isTop
-        this.$message.error('更新置顶状态失败')
-      }
-    },
+    // 删除：置顶开关变化方法
 
-    // 显示开关变化
-    handleShowChange(row) {
-      // 这里可根据业务需求调用后端接口，或本地控制显示/隐藏
-      this.$message.success(`通知已${row.isShow ? '显示' : '隐藏'}`)
-    },
+    // 删除：显示开关变化方法
 
     // 修改通知
     handleEdit(row) {

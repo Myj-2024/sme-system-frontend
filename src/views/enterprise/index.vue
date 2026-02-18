@@ -70,30 +70,30 @@
     </el-card>
 
     <el-card class="list-card" shadow="never">
-      <el-table :data="enterpriseList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px">
-        <el-table-column prop="id" label="ID" align="center" width="80"/>
-        <el-table-column prop="enterpriseName" label="企业名称" align="center" min-width="150"/>
-        <el-table-column prop="creditCode" label="统一社会信用代码" align="center" min-width="180"/>
-        <el-table-column prop="enterpriseType" label="企业类型" align="center" min-width="120">
+      <el-table :data="enterpriseList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px; font-size: 12px">
+        <el-table-column prop="id" label="ID" align="center" width="50"/>
+        <el-table-column prop="enterpriseName" label="企业名称" align="center" min-width="200"/>
+        <el-table-column prop="creditCode" label="统一社会信用代码" align="center" min-width="160"/>
+        <el-table-column prop="enterpriseType" label="企业类型" align="center" min-width="90">
           <template #default="{ row }">
             {{ getDictLabel(enterpriseTypeOptions, row.enterpriseType) || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="businessAddr" label="注册地址" align="center" min-width="200"/>
-        <el-table-column prop="legalPerson" label="法定代表人" align="center" min-width="100"/>
-        <el-table-column prop="phone" label="联系电话" align="center" min-width="120"/>
-        <el-table-column prop="regCapital" label="注册资本（万元）" align="center" min-width="100"/>
-        <el-table-column prop="establishTime" label="成立时间" align="center" min-width="120">
+        <el-table-column prop="businessAddr" label="注册地址" align="center" min-width="180"/>
+        <el-table-column prop="legalPerson" label="法定代表人" align="center" min-width="70"/>
+        <el-table-column prop="phone" label="联系电话" align="center" min-width="100"/>
+        <el-table-column prop="regCapital" label="注册资本（万元）" align="center" min-width="80"/>
+        <el-table-column prop="establishTime" label="成立时间" align="center" min-width="100">
           <template #default="{ row }">
             {{ row.establishTime ? formatDate(row.establishTime) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="townId" label="所属乡镇" align="center" min-width="100">
+        <el-table-column prop="townId" label="所属乡镇" align="center" min-width="80">
           <template #default="{ row }">
             {{ getDictLabel(townOptions, row.townId) || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="industryId" label="所属行业" align="center" min-width="100">
+        <el-table-column prop="industryId" label="所属行业" align="center" min-width="80">
           <template #default="{ row }">
             {{ getDictLabel(industryOptions, row.industryId) || '-' }}
           </template>
@@ -104,7 +104,7 @@
             {{ row.mainProduct || '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="businessStatus" label="经营状态" align="center" min-width="100">
+        <el-table-column prop="businessStatus" label="经营状态" align="center" min-width="90">
           <template #default="{ row }">
             <el-tag
                 :type="getStatusTagType(row.businessStatus)"
@@ -114,20 +114,20 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" align="center" min-width="180">
+        <el-table-column prop="createTime" label="创建时间" align="center" min-width="90">
           <template #default="{ row }">
             {{ row.createTime ? formatDate(row.createTime) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column prop="updateTime" label="更新时间" align="center" min-width="180">
+        <el-table-column prop="updateTime" label="更新时间" align="center" min-width="90">
           <template #default="{ row }">
             {{ row.updateTime ? formatDate(row.updateTime) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" align="center" width="200">
+        <el-table-column label="操作" align="center" width="130" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" icon="Edit" @click="handleEdit(row)">修改</el-button>
-            <el-button link type="danger" icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button link type="primary" icon="Edit" @click="handleEdit(row)" size="small">修改</el-button>
+            <el-button link type="danger" icon="Delete" @click="handleDelete(row)" size="small">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

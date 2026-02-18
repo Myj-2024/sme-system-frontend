@@ -46,7 +46,7 @@ const routes = [
                 path: 'policy/list',
                 name: 'PolicyList',
                 component: () => import('@/views/policy/index.vue'),
-                meta: { title: '政策发布列表' } // 保持子菜单标题不变，仅修改一级菜单名称
+                meta: { title: '政策列表' }
             },
 
             // 通知模块

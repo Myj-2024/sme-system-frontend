@@ -39,8 +39,8 @@
       <el-table style="width: 100%" :data="userList" border stripe v-loading="loading" fit>
         <el-table-column type="selection" width="55" align="center"/>
         <el-table-column prop="id" label="ID" width="60" align="center"/>
-        <el-table-column prop="username" label="用户名" width="120" align="center"/>
-        <el-table-column prop="realName" label="真实姓名" width="120" align="center"/>
+        <el-table-column prop="username" label="用户名" width="110" align="center"/>
+        <el-table-column prop="realName" label="真实姓名" width="110" align="center"/>
         <el-table-column prop="phone" label="手机号" width="150" align="center"/>
         <el-table-column label="所属部门" width="150" align="center">
           <template #default="{ row }">
@@ -49,18 +49,18 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="160" align="center">
+        <el-table-column prop="status" label="状态" width="150" align="center">
           <template #default="{ row }">
             <el-switch v-model="row.status" active-value="1" inactive-value="0" active-text="启用" inactive-text="禁用"
                        @change="handleStatusChange(row)" :disabled="row.id === currentUserId"/>
           </template>
         </el-table-column>
-        <el-table-column label="创建时间" width="180" align="center">
+        <el-table-column label="创建时间" width="150" align="center">
           <template #default="{ row }">
             {{ formatTime(row.createTime) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="260" align="center" fixed="right">
+        <el-table-column label="操作" min-width="250" align="center" fixed="right">
           <template #default="{ row }">
             <div class="operation-buttons">
               <el-button type="primary" size="small" plain @click="handleEdit(row)"

@@ -104,12 +104,7 @@
             {{ scope.row.updateTime ? formatDate(scope.row.updateTime) : '-' }}
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="100" align="center">
-          <template #default="scope">
-            <el-tag v-if="scope.row.delFlag === 1 && scope.row.isShow === 0" type="danger">已隐藏</el-tag>
-            <el-tag v-else type="success">正常</el-tag>
-          </template>
-        </el-table-column>
+        <!-- 已删除：状态列 -->
         <el-table-column label="操作" width="270" align="center">
           <template #default="scope">
             <el-switch
@@ -473,7 +468,7 @@ const handleShowChange = async (row) => {
         policyList.value[targetIndex] = {
           ...policyList.value[targetIndex],
           isShow: row.isShow,
-          delFlag: row.isShow === 0 ? 1 : 0, // 同步状态标签的关联字段
+          delFlag: row.isShow === 0 ? 1 : 0, // 保留业务逻辑，仅删除UI展示
           updateTime: new Date().toISOString() // 可选：更新修改时间
         };
       }

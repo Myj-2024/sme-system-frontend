@@ -1,7 +1,7 @@
 <template>
   <div class="admin-layout">
     <!-- 左侧菜单 -->
-    <el-aside :width="isCollapse ? '64px' : '230px'" class="layout-aside">
+    <el-aside :width="isCollapse ? '64px' : '240px'" class="layout-aside">
       <div class="layout-logo" :class="{ collapsed: isCollapse }">
         <img src="/logo.png" class="logo-img"/>
         <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
@@ -88,7 +88,7 @@
           </template>
           <el-menu-item index="/policy/list">
             <el-icon><List/></el-icon>
-            <span>政策发布列表</span>
+            <span>政策列表</span>
           </el-menu-item>
         </el-sub-menu>
 
@@ -245,7 +245,7 @@ const currentPageTitle = computed(() => {
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
   if (p === '/dept/list') return '部门人员管理'
-  if (p === '/policy/list') return '政策发布列表'
+  if (p === '/policy/list') return '政策列表'
   if (p === '/notice/list') return '通知列表'
   if (p === '/notice/form') return '发布通知'
   if (p === '/notice/my') return '我的通知'

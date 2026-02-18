@@ -55,14 +55,14 @@
           v-loading="loading"
           border
           stripe
-          style="width: 100%; margin-top: 20px; font-size: 13px;"
+          style="width: 100%; margin-top: 20px; font-size: 12px;"
           :default-sort="{prop: 'updateTime', order: 'descending'}"
       >
         <!-- 序号列 -->
         <el-table-column
             label="序号"
             align="center"
-            width="60"
+            width="50"
             type="index"
             :index="(index) => (pageNum - 1) * pageSize + index + 1"
         />
@@ -102,7 +102,7 @@
             prop="leaderName"
             label="包抓领导"
             align="center"
-            min-width="100"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.leaderName || '-' }}
@@ -124,7 +124,7 @@
             prop="enterpriseLeader"
             label="企业负责人"
             align="center"
-            min-width="90"
+            min-width="80"
         >
           <template #default="{ row }">
             {{ row.enterpriseLeader || '-' }}
@@ -135,7 +135,7 @@
             prop="enterprisePhone"
             label="企业联系电话"
             align="center"
-            min-width="110"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.enterprisePhone || '-' }}
@@ -146,7 +146,7 @@
             prop="classDeptName"
             label="专班负责单位"
             align="center"
-            min-width="110"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.classDeptName || '-' }}
@@ -168,7 +168,7 @@
             prop="classPhone"
             label="班长联系电话"
             align="center"
-            min-width="110"
+            min-width="100"
         >
           <template #default="{ row }">
             {{ row.classPhone || '-' }}
@@ -260,7 +260,7 @@
           </template>
         </el-table-column>
         <!-- 操作列 -->
-        <el-table-column label="操作" align="center" width="100">
+        <el-table-column label="操作" align="center" width="100" fixed="right">
           <template #default="{ row }">
             <!-- 办理进度按钮 -->
             <el-button
