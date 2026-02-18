@@ -208,7 +208,7 @@ const unreadCount = ref(0)
 const getUnreadCount = async () => {
   try {
     const res = await request({
-      url: '/notice/unread/count',
+      url: '/admin/noticeUser/unreadCount',
       method: 'get'
     })
     unreadCount.value = res.data || 0

@@ -17,11 +17,15 @@
           />
         </el-form-item>
 
-        <!-- 通知类型 -->
+        <!-- 通知类型 - 从字典项API获取 -->
         <el-form-item label="通知类型" prop="noticeType">
           <el-select v-model="formData.noticeType" placeholder="请选择通知类型">
-            <el-option label="普通通知" value="NOTICE"/>
-            <el-option label="警告通知" value="WARNING"/>
+            <el-option
+                v-for="item in noticeTypeOptions"
+                :key="item.itemCode"
+                :label="item.itemName"
+                :value="item.itemCode"
+            />
           </el-select>
         </el-form-item>
 
@@ -53,9 +57,9 @@
           </el-radio-group>
         </el-form-item>
 
-        <!-- 指定用户 -->
+        <!-- 指定用户-->
         <el-form-item
-            label="指定用户"
+            label="已选择"
             prop="targetUserIds"
             v-if="formData.targetType === 'SPECIFIC_USER'"
         >
@@ -70,51 +74,6 @@
               <span class="user-tag-text">{{ getUserNameById(userId) }}</span>
             </el-tag>
           </div>
-
-          <el-button type="primary" plain @click="openUserSelectDialog">
-            选择用户
-          </el-button>
-
-          <el-dialog
-              v-model="userDialogVisible"
-              title="选择接收用户"
-              width="800px"
-              @close="userDialogVisible = false"
-          >
-            <el-input
-                v-model="userSearchQuery"
-                placeholder="请输入用户名/真实姓名搜索"
-                clearable
-                style="margin-bottom: 20px;"
-                @input="filterUserList"
-            />
-
-            <el-table
-                :data="filteredUserList"
-                border
-                stripe
-                style="width: 100%"
-                :selectable="(row) => true"
-                @selection-change="handleUserSelectionChange"
-                ref="userTableRef"
-            >
-              <el-table-column type="selection" width="55"/>
-              <el-table-column prop="id" label="ID" width="80" align="center"/>
-              <el-table-column prop="username" label="用户名" width="120" align="center"/>
-              <el-table-column prop="realName" label="真实姓名" width="120" align="center"/>
-              <el-table-column prop="phone" label="手机号" width="150" align="center"/>
-              <el-table-column prop="deptCode" label="所属部门" width="150" align="center">
-                <template #default="{ row }">
-                  {{ getDeptName(row.deptCode) }}
-                </template>
-              </el-table-column>
-            </el-table>
-
-            <template #footer>
-              <el-button @click="userDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="confirmUserSelection">确定</el-button>
-            </template>
-          </el-dialog>
         </el-form-item>
 
         <!-- 通知内容 -->
@@ -128,16 +87,60 @@
         </el-form-item>
       </el-form>
     </el-card>
+
+    <!-- 选择接收用户对话框（移到此处，确保始终可渲染） -->
+    <el-dialog
+        v-model="userDialogVisible"
+        title="选择接收用户"
+        width="800px"
+        @close="userDialogVisible = false"
+    >
+      <el-input
+          v-model="userSearchQuery"
+          placeholder="请输入用户名/真实姓名搜索"
+          clearable
+          style="margin-bottom: 20px;"
+          @input="filterUserList"
+      />
+
+      <el-table
+          :data="filteredUserList"
+          border
+          stripe
+          style="width: 100%"
+          :selectable="(row) => true"
+          @selection-change="handleUserSelectionChange"
+          ref="userTableRef"
+      >
+        <el-table-column type="selection" width="55"/>
+        <el-table-column prop="id" label="ID" width="80" align="center"/>
+        <el-table-column prop="username" label="用户名" width="120" align="center"/>
+        <el-table-column prop="realName" label="真实姓名" width="120" align="center"/>
+        <el-table-column prop="phone" label="手机号" width="150" align="center"/>
+        <el-table-column prop="deptCode" label="所属部门" width="150" align="center">
+          <template #default="{ row }">
+            {{ getDeptName(row.deptCode) }}
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button @click="userDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmUserSelection">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import {ref, reactive, onMounted, computed} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import {useRoute, useRouter} from 'vue-router'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useRoute, useRouter } from 'vue-router'
 import Editor from '@/components/Editor.vue'
-import {saveNotice, updateNotice, getNoticeDetail} from '@/api/notice'
-import request from '@/utils/request'
+import { saveNotice, updateNotice, getNoticeDetail } from '@/api/notice'
+// 导入你已有的API
+import {listDictItemByDictCode, selectItemList} from '@/api/dictItem'
+import userApi from '@/api/user'
 
 const route = useRoute()
 const router = useRouter()
@@ -147,8 +150,14 @@ const isEdit = ref(!!route.params.id)
 const userDialogVisible = ref(false)
 const userSearchQuery = ref('')
 const selectedUserRows = ref([])
-const deptList = ref([])
 const userTableRef = ref(null)
+
+// 通知类型选项：从字典项API获取
+const noticeTypeOptions = ref([])
+// 部门列表：从字典项API获取
+const deptList = ref([])
+// 用户列表：从用户API获取
+const userList = ref([])
 
 const formatCurrentDate = () => {
   const date = new Date()
@@ -173,10 +182,10 @@ const formData = reactive({
 })
 
 const formRules = reactive({
-  title: [{required: true, message: '请输入通知标题', trigger: 'blur'}],
-  noticeType: [{required: true, message: '请选择通知类型', trigger: 'change'}],
-  publishTime: [{required: true, message: '请选择发布时间', trigger: 'change'}],
-  targetType: [{required: true, message: '请选择接收范围', trigger: 'change'}],
+  title: [{ required: true, message: '请输入通知标题', trigger: 'blur' }],
+  noticeType: [{ required: true, message: '请选择通知类型', trigger: 'change' }],
+  publishTime: [{ required: true, message: '请选择发布时间', trigger: 'change' }],
+  targetType: [{ required: true, message: '请选择接收范围', trigger: 'change' }],
   targetUserIds: [
     {
       required: () => formData.targetType === 'SPECIFIC_USER',
@@ -184,11 +193,10 @@ const formRules = reactive({
       trigger: 'change'
     }
   ],
-  content: [{required: true, message: '请输入通知内容', trigger: 'blur'}]
+  content: [{ required: true, message: '请输入通知内容', trigger: 'blur' }]
 })
 
-const userList = ref([])
-
+// 筛选用户列表（基于用户列表）
 const filteredUserList = computed(() => {
   if (userSearchQuery.value === '') {
     return userList.value
@@ -200,49 +208,13 @@ const filteredUserList = computed(() => {
   })
 })
 
-const getDeptList = async () => {
-  try {
-    const deptRes = await request({
-      url: '/api/dictItem/selectItemList',
-      method: 'get',
-      params: {
-        dictId: 10,
-        pageNum: 1,
-        pageSize: 999,
-        status: 1
-      }
-    })
-    deptList.value = deptRes.data?.records || []
-  } catch (error) {
-    console.error('获取部门列表失败：', error)
-  }
-}
-
-const getUserList = async () => {
-  try {
-    await getDeptList()
-    const res = await request({
-      url: '/admin/user',
-      method: 'get'
-    })
-    if (res && res.code === 200 && Array.isArray(res.data)) {
-      userList.value = res.data || [];
-    } else {
-      userList.value = [];
-      ElMessage.warning('用户列表数据为空');
-    }
-  } catch (error) {
-    ElMessage.error('获取用户列表失败');
-    console.error('获取用户列表异常：', error);
-    userList.value = [];
-  }
-}
-
+// 根据用户ID获取用户名（基于用户列表）
 const getUserNameById = (userId) => {
   const user = userList.value.find(u => u.id === userId)
   return user ? `${user.username}（${user.realName || '未填写'}）` : '未知用户'
 }
 
+// 根据部门编码获取部门名称（基于部门字典）
 const getDeptName = (deptCode) => {
   if (!deptCode) return '未分配'
   const dept = deptList.value.find(d => d.itemCode === deptCode)
@@ -280,13 +252,69 @@ const confirmUserSelection = () => {
   userDialogVisible.value = false
 }
 
-const filterUserList = () => {
-}
+const filterUserList = () => {}
 
 const handleTargetTypeChange = (val) => {
   if (val === 'ALL') {
     formData.targetUserIds = []
     formRef.value.clearValidate('targetUserIds')
+  } else if (val === 'SPECIFIC_USER') {
+    // 切换到指定用户时，直接弹出选择用户对话框
+    openUserSelectDialog()
+  }
+}
+
+// 获取通知类型字典项（按字典编码查询）
+const getNoticeTypeOptions = async () => {
+  try {
+    // 使用字典编码 notice_type 来获取字典项
+    const res = await listDictItemByDictCode('notice_type')
+    noticeTypeOptions.value = res.data || []
+  } catch (error) {
+    console.error('获取通知类型字典项失败：', error)
+    // 兜底：如果接口调用失败，保留原有硬编码值，防止页面异常
+    noticeTypeOptions.value = [
+      { itemCode: 'NOTICE', itemName: '普通' },
+      { itemCode: 'WARNING', itemName: '警告' },
+      { itemCode: 'URGENT', itemName: '紧急' }
+    ]
+  }
+}
+
+// 获取部门字典项
+const getDeptList = async () => {
+  try {
+    const res = await selectItemList({
+      dictId: 10, // 部门字典ID
+      pageNum: 1,
+      pageSize: 999,
+      status: 1
+    })
+    deptList.value = res.data?.records || []
+  } catch (error) {
+    console.error('获取部门列表失败：', error)
+  }
+}
+
+// 获取用户列表
+const getUserList = async () => {
+  try {
+    const res = await userApi.getUserPage({
+      pageNum: 1,
+      pageSize: 999
+    })
+    if (res && res.code === 200 && Array.isArray(res.data?.records)) {
+      userList.value = res.data.records || []
+      // 转换状态为字符串，适配前端el-switch
+      userList.value = userList.value.map(u => ({...u, status: u.status?.toString()}))
+    } else {
+      userList.value = []
+      ElMessage.warning('用户列表数据为空')
+    }
+  } catch (error) {
+    ElMessage.error('获取用户列表失败')
+    console.error('获取用户列表异常：', error)
+    userList.value = []
   }
 }
 
@@ -374,7 +402,11 @@ const submitForm = async () => {
 
 onMounted(async () => {
   try {
+    // 初始化时获取字典和用户数据
+    await getNoticeTypeOptions()
+    await getDeptList()
     await getUserList()
+    // 编辑场景获取通知详情
     if (isEdit.value) {
       await getEditData()
     }
