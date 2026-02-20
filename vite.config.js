@@ -6,28 +6,28 @@ import path from 'path'
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    // 配置路径别名，方便代码中使用@引用
     alias: {
       '@': path.resolve(__dirname, 'src')
     }
   },
   server: {
-    // 开发环境跨域代理配置
-    port: 3000, // 前端运行端口
-    open: true, // 启动时自动打开浏览器
-    proxy: {
-      // 匹配以/dev-api开头的请求
-      '/dev-api': {
-        target: 'http://localhost:8080', // 后端接口地址
-        changeOrigin: true, // 开启跨域
-        rewrite: (path) => path.replace(/^\/dev-api/, '') // 去除/dev-api前缀
-      }
-    }
+    host: '0.0.0.0',
+    port: 3000,
+    open: true,
+    // 修复：仅本地访问时启用代理（避免局域网访问走代理）
+    proxy: process.env.npm_lifecycle_event === 'dev' && process.platform === 'win32'
+        ? {
+          '/dev-api': {
+            target: 'http://localhost:8080',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(/^\/dev-api/, '')
+          }
+        }
+        : {} // 非本地访问时关闭代理
   },
   build: {
-    // 生产环境打包配置
-    outDir: 'dist', // 打包输出目录
-    assetsDir: 'assets', // 静态资源目录
-    minify: 'terser' // 代码压缩
+    outDir: 'dist',
+    assetsDir: 'assets',
+    minify: 'terser'
   }
 })

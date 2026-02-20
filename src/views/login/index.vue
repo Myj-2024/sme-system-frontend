@@ -8,9 +8,10 @@
             alt="广河县中小微企业服务系统"
             class="logo-img"
             v-if="logoExists"
+            @error="handleImgError('logo')"
         />
         <h2>广河县中小微企业服务系统</h2>
-        <p>工程化、高性能、跨组件库的前端模板</p>
+        <p>数智助企，聚力兴商 — 中小微企业发展新引擎</p>
       </div>
       <div class="illustration">
         <img
@@ -18,6 +19,7 @@
             alt="系统插画"
             class="illustration-img"
             v-if="illustrationExists"
+            @error="handleImgError('illustration')"
         />
       </div>
     </div>
@@ -140,42 +142,30 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-
+// 整个页面统一渐变背景，弱化分界感
 .login-container {
   display: flex !important;
   height: 100vh !important;
   min-height: 100vh !important;
   width: 100vw !important;
-  background: linear-gradient(135deg, #eef2f7 0%, #e8f4ff 100%) !important;
+  /* 优化的全局渐变背景，更柔和自然 */
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f7ff 50%, #f5fafe 100%) !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
   position: relative !important;
 }
 
+/* 完全移除容器的渐变遮罩，避免叠加效果 */
 .login-container::before {
-  content: "" !important;
-  position: absolute !important;
-  left: calc(50% - 140px) !important;
-  top: 0 !important;
-  width: 280px !important;
-  height: 100% !important;
-  background: linear-gradient(
-    to right,
-    rgba(238, 242, 247, 0) 0%,
-    rgba(238, 242, 247, 0.35) 25%,
-    rgba(255, 255, 255, 0.85) 50%,
-    rgba(238, 242, 247, 0.35) 75%,
-    rgba(232, 244, 255, 0) 100%
-  ) !important;
-  filter: blur(16px) !important;
-  z-index: 2 !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
+// 左侧区域：完全透明，彻底融入全局背景
 .login-left {
   width: 50% !important;
-  background: linear-gradient(135deg, #ffffff 0%, #afd8f5 100%) !important;
+  /* 完全透明，继承全局背景 */
+  background: transparent !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
@@ -183,31 +173,16 @@ onMounted(() => {
   padding: 40px !important;
   text-align: center !important;
   position: relative !important;
+  overflow: hidden !important;
+  /* 移除所有阴影和边框，彻底消除分界线 */
+  box-shadow: none !important;
+  border: none !important;
 }
 
-.login-left::after {
-  content: "" !important;
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: linear-gradient(135deg, rgba(224, 247, 250, 0.2), rgba(178, 235, 242, 0.3)) !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
-}
-
+/* 移除所有左侧的伪元素渐变/羽化效果 */
+.login-left::after,
 .login-left::before {
-  content: "" !important;
-  position: absolute !important;
-  right: -110px !important;
-  top: 0 !important;
-  width: 220px !important;
-  height: 100% !important;
-  background: linear-gradient(to right, rgba(175, 216, 245, 0) 0%, rgba(232, 244, 255, 0.9) 100%) !important;
-  filter: blur(20px) !important;
-  z-index: 1 !important;
-  pointer-events: none !important;
+  display: none !important;
 }
 
 .logo {
@@ -220,6 +195,9 @@ onMounted(() => {
   width: 80px !important;
   height: auto !important;
   margin-bottom: 16px !important;
+  background: transparent !important;
+  mix-blend-mode: normal !important;
+  filter: none !important;
 }
 
 .logo h2 {
@@ -242,30 +220,38 @@ onMounted(() => {
   align-items: center !important;
   position: relative !important;
   z-index: 2 !important;
+  /* 给图片容器添加内边距，让羽化效果更明显 */
+  padding: 20px !important;
 }
 
 .illustration-img {
   max-width: 90% !important;
   max-height: 100% !important;
   object-fit: contain !important;
-  -webkit-mask-image: linear-gradient(to right, transparent 3%, black 10%, black 90%, transparent 97%),
-  linear-gradient(to bottom, transparent 5%, black 15%, black 85%, transparent 95%) !important;
+  /* 核心：添加大面积羽化效果，让图片边界自然过渡 */
+  filter: saturate(1.1) brightness(1.08) contrast(0.95)
+  drop-shadow(0 8px 30px rgba(0, 136, 204, 0.15)); /* 轻微模糊增强羽化感 */
+  /* 超大范围的内阴影模拟羽化效果 */
+  box-shadow: inset 0 0 30px 10px rgba(255, 255, 255, 0.8) !important;
+  border-radius: 10px !important;
+  transition: all 0.5s ease !important;
+  /* 关键：添加mask遮罩实现真正的羽化边界 */
+  -webkit-mask-image: linear-gradient(to right, transparent 8%, black 20%, black 80%, transparent 92%),
+  linear-gradient(to bottom, transparent 8%, black 20%, black 80%, transparent 92%) !important;
   -webkit-mask-composite: source-in !important;
   mask-composite: intersect !important;
-  mask-image: linear-gradient(to right, transparent 3%, black 10%, black 90%, transparent 97%),
-  linear-gradient(to bottom, transparent 5%, black 15%, black 85%, transparent 95%) !important;
-  filter: saturate(1.1) brightness(1.08) contrast(0.95) !important;
-  box-shadow: 0 8px 24px rgba(0, 136, 204, 0.12) !important;
-  border-radius: 20px !important;
-  transition: all 0.5s ease !important;
+  mask-image: linear-gradient(to right, transparent 8%, black 20%, black 80%, transparent 92%),
+  linear-gradient(to bottom, transparent 8%, black 20%, black 80%, transparent 92%) !important;
 }
 
+// 右侧区域：完全透明背景，融入全局渐变
 .login-right {
   width: 50% !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
+  /* 完全透明，继承全局背景 */
   background: transparent !important;
   padding: 40px !important;
   position: relative !important;
@@ -274,22 +260,25 @@ onMounted(() => {
 .login-card {
   width: 460px !important;
   padding: 50px 40px !important;
-  background: rgba(255, 255, 255, 0.85) !important;
-  backdrop-filter: saturate(1.5) blur(6px) !important;
+  /* 登录卡片半透明，增强融合感 */
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: saturate(1.5) blur(10px) !important;
   border-radius: 12px !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  /* 柔和阴影，替代生硬边界 */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
   transition: all 0.3s ease !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
 }
 
 .login-card:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08) !important;
 }
 
 .title {
   font-size: 26px !important;
   font-weight: 600 !important;
   margin-bottom: 8px !important;
-  color: #303133 !important;
+  color: #303333 !important;
   text-align: center !important;
 }
 
@@ -308,8 +297,9 @@ onMounted(() => {
 .captcha {
   margin: 20px 0 !important;
   padding: 16px !important;
-  background: #f8f9fa !important;
+  background: rgba(248, 249, 250, 0.9) !important;
   border-radius: 8px !important;
+  border: 1px solid #e9ecef !important;
 }
 
 /* 核心修改：输入框背景色与卡片完全统一 */
@@ -352,21 +342,27 @@ onMounted(() => {
   text-align: center !important;
 }
 
+/* ========================================
+   滑块样式美化：现代化、融合主题
+   ======================================== */
 :deep(.captcha-slider .el-slider) {
   --el-slider-height: 12px !important;
+  --el-slider-border-radius: 6px !important;
 }
 
 :deep(.captcha-slider .el-slider__runway) {
-  height: 12px !important;
-  border-radius: 999px !important;
+  height: var(--el-slider-height) !important;
+  border-radius: var(--el-slider-border-radius) !important;
   background: linear-gradient(90deg, #e6edf7 0%, #f0f5fb 100%) !important;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  border: none !important;
 }
 
 :deep(.captcha-slider .el-slider__bar) {
-  height: 12px !important;
-  border-radius: 999px !important;
+  height: var(--el-slider-height) !important;
+  border-radius: var(--el-slider-border-radius) !important;
   background: linear-gradient(90deg, #409eff 0%, #67c23a 100%) !important;
+  box-shadow: 0 2px 6px rgba(64, 158, 255, 0.3) !important;
 }
 
 :deep(.captcha-slider .el-slider__button-wrapper) {
@@ -379,7 +375,17 @@ onMounted(() => {
   border: none !important;
   border-radius: 50% !important;
   background: #fff !important;
-  box-shadow: 0 6px 18px rgba(64, 158, 255, 0.35) !important;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.35) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.captcha-slider .el-slider__button:hover) {
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.45) !important;
+}
+
+:deep(.captcha-slider .el-slider__button:active) {
+  transform: scale(1.05) !important;
 }
 
 .login-btn {
@@ -408,5 +414,96 @@ onMounted(() => {
   transform: none !important;
   font-size: 12px !important;
   color: #909399 !important;
+}
+
+/* ========================================
+   核心修改：1100px以下只隐藏插画，保留logo和文字
+   ======================================== */
+@media (max-width: 1100px) {
+  /* 只隐藏插画，保留logo和文字 */
+  .illustration {
+    display: none !important;
+  }
+
+  /* 调整左侧区域高度，让logo居中 */
+  .login-left {
+    width: 40% !important;
+    padding: 20px !important;
+  }
+
+  /* 扩大右侧登录区域宽度 */
+  .login-right {
+    width: 60% !important;
+  }
+
+  /* 缩小登录卡片 */
+  .login-card {
+    width: 380px !important;
+    padding: 40px 30px !important;
+  }
+}
+
+/* 992px以下改为上下布局，logo在上，登录在下 */
+@media (max-width: 992px) {
+  .login-container {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+  }
+
+  .login-left {
+    width: 100% !important;
+    padding: 30px 20px !important;
+    min-height: auto !important;
+  }
+
+  .login-right {
+    width: 100% !important;
+    padding: 20px !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 400px !important;
+    padding: 30px 25px !important;
+  }
+}
+
+/* 768px以下隐藏左侧所有内容，只显示登录卡片 */
+@media (max-width: 768px) {
+  .login-left {
+    display: none !important;
+  }
+
+  .login-right {
+    height: 100vh !important;
+    justify-content: center !important;
+  }
+}
+
+/* 手机端（≤576px）微调 */
+@media (max-width: 576px) {
+  .login-right {
+    padding: 15px !important;
+  }
+
+  .login-card {
+    padding: 25px 20px !important;
+  }
+
+  .title {
+    font-size: 20px !important;
+  }
+
+  .subtitle {
+    font-size: 13px !important;
+    margin-bottom: 25px !important;
+  }
+
+  .login-btn {
+    height: 40px !important;
+    font-size: 15px !important;
+  }
 }
 </style>

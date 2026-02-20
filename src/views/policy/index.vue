@@ -68,7 +68,7 @@
           :data="policyList"
           border
           v-loading="loading"
-          style="width: 100%"
+          style="width: 100%; font-size: 12px"
           :header-cell-style="{ background: '#f8f9fa', color: '#303133', fontWeight: '500' }"
           :row-style="{ height: '60px' }"
           :cell-style="{ padding: '10px 0' }"
@@ -564,7 +564,7 @@ onMounted(() => {
   -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-all;
-  font-size: 13px;
+  font-size: 12px;
   color: #606266;
   line-height: 1.5;
 }

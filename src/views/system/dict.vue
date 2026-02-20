@@ -32,7 +32,7 @@
       </el-form>
     </el-card>
 
-    <el-table :data="dictList" border v-loading="loading" style="width: 100%">
+    <el-table :data="dictList" border v-loading="loading" style="width: 100%; font-size: 12px">
       <!-- 新增字典ID列 -->
       <el-table-column label="字典ID" prop="id" width="80" align="center"/>
       <el-table-column label="字典名称" prop="dictName" align="center"/>

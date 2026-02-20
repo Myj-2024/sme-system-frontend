@@ -82,25 +82,35 @@ export const userApi = {
         })
     },
     /**
-     * 获取用户拥有的角色ID列表
+     * 获取用户拥有的角色ID（一对一）
      * @param {number} userId
      */
-    getUserRoleIds: (userId) => {
+    getUserRoleId: (userId) => {
         return request({
-            url: `/admin/user/${userId}/roles`,
+            url: `/admin/user/${userId}`, // 直接查询用户信息获取roleId
             method: 'get'
         })
     },
     /**
-     * 为用户分配角色
+     * 为用户分配角色（一对一）
      * @param {number} userId
-     * @param {Array} roleIds
+     * @param {number} roleId
      */
-    assignRoles: (userId, roleIds) => {
+    assignRole: (userId, roleId) => {
         return request({
-            url: `/admin/user/${userId}/roles`,
-            method: 'post',
-            data: roleIds
+            url: `/admin/user/${userId}/role`,
+            method: 'put',
+            data: {roleId: roleId}
+        })
+    },
+    /**
+     * 重置用户密码
+     * @param {number} userId
+     */
+    resetPassword: (userId) => {
+        return request({
+            url: `/admin/user/resetPwd/${userId}`,
+            method: 'post'
         })
     }
 }

@@ -20,7 +20,7 @@
 
     <el-card class="list-card" shadow="never">
       <el-table
-          style="width: 100%"
+          style="width: 100%; font-size: 12px"
           :data="roleList"
           border
           stripe
@@ -421,15 +421,11 @@ const rules = {
 .role-list-page {
   background-color: #f5f7fa;
   min-height: calc(100vh - 60px);
-  padding: 20px;
 }
 .filter-card {
   margin-bottom: 20px;
-  padding: 16px;
 }
-.list-card {
-  padding: 16px;
-}
+
 .pagination {
   margin-top: 20px;
   display: flex;
