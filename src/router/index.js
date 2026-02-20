@@ -42,7 +42,6 @@ const routes = [
                     activeMenu: '/smeple/list'
                 }
             },
-            // dept-user 页面归属调整到 smeple 路径下
             {
                 path: 'smeple/dept-user',
                 name: 'DeptUser',
@@ -94,7 +93,7 @@ const routes = [
                 }
             },
 
-            // 系统管理相关（移动到system目录）
+            // 系统管理相关
             {
                 path: 'user/list',
                 name: 'UserList',
@@ -108,6 +107,12 @@ const routes = [
                 meta: { title: '角色管理' }
             },
             {
+                path: 'permission/list',
+                name: 'PermissionList',
+                component: () => import('@/views/system/permission.vue'),
+                meta: { title: '权限管理' }
+            },
+            {
                 path: 'dict/list',
                 name: 'DictList',
                 component: () => import('@/views/system/dict.vue'),
@@ -118,6 +123,13 @@ const routes = [
                 name: 'DictData',
                 component: () => import('@/views/system/dict-data.vue'),
                 meta: { title: '字典数据', activeMenu: '/dict/list' }
+            },
+            {
+                // 修改为与菜单一致的路径
+                path: 'icon/list',
+                name: 'Icon',
+                component: () => import('@/views/system/icon.vue'),
+                meta: { title: '图标管理', icon: 'Picture' }
             }
         ]
     },

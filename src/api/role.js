@@ -21,7 +21,7 @@ export const roleApi = {
      */
     getAllRoles: () => {
         return request({
-            url: '/admin/role',
+            url: '/admin/role/list', // 适配后端接口路径
             method: 'get'
         })
     },
@@ -43,7 +43,7 @@ export const roleApi = {
      */
     addRole: (data) => {
         return request({
-            url: '/admin/role',
+            url: '/admin/role/add',
             method: 'post',
             data
         })
@@ -51,12 +51,11 @@ export const roleApi = {
 
     /**
      * 编辑角色
-     * @param {number} id
      * @param {Object} data
      */
-    updateRole: (id, data) => {
+    updateRole: ( data) => {
         return request({
-            url: `/admin/role/${id}`,
+            url: `/admin/role/update`,
             method: 'put',
             data
         })
@@ -68,34 +67,70 @@ export const roleApi = {
      */
     deleteRole: (id) => {
         return request({
-            url: `/admin/role/${id}`,
+            url: `/admin/role/delete/${id}`,
             method: 'delete'
         })
     },
 
     /**
-     * 获取角色权限树
+     * 获取角色已分配的权限ID列表（适配后端接口）
      * @param {number} roleId
      */
     getRolePermissions: (roleId) => {
         return request({
-            url: `/admin/role/${roleId}/permissions`,
+            url: `/admin/role-permission/permission-ids/${roleId}`, // 适配后端路径
             method: 'get'
         })
     },
 
     /**
-     * 更新角色权限
+     * 更新角色权限（适配后端接口）
      * @param {number} roleId
-     * @param {Array} permissions
+     * @param {Array} permissionIds
      */
-    updateRolePermissions: (roleId, permissions) => {
+    updateRolePermissions: (roleId, permissionIds) => {
         return request({
-            url: `/admin/role/${roleId}/permissions`,
+            url: '/admin/role-permission/assign', // 适配后端路径
             method: 'post',
-            data: permissions
+            data: {
+                roleId: roleId,
+                permissionIds: permissionIds // 适配后端DTO结构
+            }
         })
     }
 }
 
-export default roleApi
+/**
+ * 权限管理相关API
+ */
+export const permissionApi = {
+    /**
+     * 获取所有权限列表（扁平结构）
+     */
+    listPermission: () => {
+        return request({
+            url: '/admin/permission/page', // 后端权限分页接口，不传分页参数返回全部
+            method: 'post',
+            data: {
+                pageNum: 1,
+                pageSize: 1000 // 一次性获取所有权限
+            }
+        })
+    },
+
+    /**
+     * 获取角色可访问的完整权限列表
+     * @param {number} roleId
+     */
+    getPermissionsByRoleId: (roleId) => {
+        return request({
+            url: `/admin/role-permission/permissions/${roleId}`,
+            method: 'get'
+        })
+    }
+}
+
+export default {
+    ...roleApi,
+    ...permissionApi
+}

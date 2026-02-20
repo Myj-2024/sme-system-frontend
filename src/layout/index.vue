@@ -36,9 +36,18 @@
             <el-icon><UserFilled/></el-icon>
             <span>角色管理</span>
           </el-menu-item>
+          <el-menu-item index="/permission/list">
+            <el-icon><Menu/></el-icon>
+            <span>菜单管理</span>
+          </el-menu-item>
           <el-menu-item index="/dict/list">
             <el-icon><Files/></el-icon>
             <span>字典管理</span>
+          </el-menu-item>
+          <!-- 新增：图标管理菜单 -->
+          <el-menu-item index="/icon/list">
+            <el-icon><Picture/></el-icon>
+            <span>图标管理</span>
           </el-menu-item>
         </el-sub-menu>
 
@@ -186,9 +195,9 @@ import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
 import request from '@/utils/request'
 import {
-  HomeFilled, User, UserFilled, Setting,
+  HomeFilled, User, UserFilled, Setting, Menu,
   Expand, OfficeBuilding, Files, Fold, Document, Bell,
-  List, Edit, Message
+  List, Edit, Message, Picture // 新增：导入Picture图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -221,6 +230,17 @@ const goMyNotice = () => {
 
 onMounted(() => {
   getUnreadCount()
+  // 新增：监听路由变化，当从我的通知/通知详情返回时刷新未读数量
+  router.afterEach((to, from) => {
+    if (from.path.startsWith('/notice/')) {
+      getUnreadCount()
+    }
+  })
+})
+
+// 新增：暴露 getUnreadCount 方法供子组件调用（关键修复）
+defineExpose({
+  getUnreadCount
 })
 
 // 面包屑
@@ -230,7 +250,8 @@ const breadcrumbList = computed(() => {
   if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
   if (p.startsWith('/policy')) return [{title: '政策管理', path: '/policy/list'}]
   if (p.startsWith('/notice')) return [{title: '通知管理', path: '/notice/my'}]
-  if (p.startsWith('/user') || p.startsWith('/role') || p.startsWith('/dict')) return [{title: '系统管理', path: '/user/list'}]
+  // 新增：图标管理面包屑归属系统管理
+  if (p.startsWith('/user') || p.startsWith('/role') || p.startsWith('/permission') || p.startsWith('/dict') || p.startsWith('/icon')) return [{title: '系统管理', path: '/user/list'}]
   return []
 })
 
@@ -240,7 +261,7 @@ const currentPageTitle = computed(() => {
   if (p === '/enterprise/list') return '企业列表'
   if (p === '/smeple/list') return '包抓联列表'
   if (p === '/smeple/handle') return '问题办理'
-  if (p === '/smeple/dept-user') return '部门人员管理' // 匹配新路由
+  if (p === '/smeple/dept-user') return '部门人员管理'
   if (p === '/policy/list') return '政策列表'
   if (p === '/notice/list') return '通知列表'
   if (p === '/notice/form') return '发布通知'
@@ -248,8 +269,11 @@ const currentPageTitle = computed(() => {
   if (p.startsWith('/notice/detail')) return '通知详情'
   if (p === '/user/list') return '用户管理'
   if (p === '/role/list') return '角色管理'
+  if (p === '/permission/list') return '菜单管理'
   if (p === '/dict/list') return '字典管理'
   if (p.startsWith('/dict/data')) return '字典数据'
+  // 新增：图标管理页面标题
+  if (p === '/icon/list') return '图标管理'
   return ''
 })
 

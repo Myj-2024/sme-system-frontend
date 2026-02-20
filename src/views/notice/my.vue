@@ -53,12 +53,15 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, onMounted, getCurrentInstance} from 'vue'
 import {useRouter} from 'vue-router'
 import {ElMessage} from 'element-plus'
 import {getMyNoticeList, markNoticeAsRead} from '@/api/notice'
 
 const router = useRouter()
+// 获取父组件（layout）实例
+const instance = getCurrentInstance()
+const parentInstance = instance?.parent?.parent
 
 const noticeList = ref([])
 const total = ref(0)
@@ -92,6 +95,13 @@ const handleClick = async (row) => {
   try {
     if (row.isRead === 0) {
       await markNoticeAsRead(row.id)
+      // 本地更新状态，列表红点立即消失
+      row.isRead = 1
+      // 调用layout的getUnreadCount方法刷新右上角红点
+      if (parentInstance && parentInstance.exposed?.getUnreadCount) {
+        await parentInstance.exposed.getUnreadCount()
+      }
+      // 移除：ElMessage.success('通知已标记为已读') 这行提示代码
     }
     router.push(`/notice/detail/${row.id}`)
   } catch (error) {
@@ -113,7 +123,6 @@ onMounted(() => {
 
 <style scoped>
 .notice-my-container {
-  padding: 20px;
   background: #f5f7fa;
   min-height: calc(100vh - 84px);
 }
