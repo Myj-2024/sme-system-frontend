@@ -7,13 +7,15 @@
         <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
       </div>
 
+      <!-- 动态菜单渲染（适配后端树形结构） -->
       <el-menu
           router
-          :default-active="$route.path"
+          :default-active="activeMenuPath"
           :collapse="isCollapse"
           :collapse-transition="false"
           class="layout-menu"
       >
+        <!-- 首页（静态） -->
         <el-menu-item index="/dashboard">
           <el-icon>
             <HomeFilled/>
@@ -21,132 +23,43 @@
           <span>首页</span>
         </el-menu-item>
 
-        <el-sub-menu index="system">
-          <template #title>
-            <el-icon>
-              <Setting/>
-            </el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/user/list">
-            <el-icon>
-              <User/>
-            </el-icon>
-            <span>用户管理</span>
-          </el-menu-item>
-          <el-menu-item index="/role/list">
-            <el-icon>
-              <UserFilled/>
-            </el-icon>
-            <span>角色管理</span>
-          </el-menu-item>
-          <el-menu-item index="/permission/list">
-            <el-icon>
-              <Menu/>
-            </el-icon>
-            <span>菜单管理</span>
-          </el-menu-item>
-          <el-menu-item index="/dict/list">
-            <el-icon>
-              <Files/>
-            </el-icon>
-            <span>字典管理</span>
-          </el-menu-item>
-          <el-menu-item index="/icon/list">
-            <el-icon>
-              <Picture/>
-            </el-icon>
-            <span>图标管理</span>
-          </el-menu-item>
-        </el-sub-menu>
+        <!-- 动态菜单（修复：子菜单直接使用后端返回的path） -->
+        <template v-for="menu in menuList" :key="menu.id">
+          <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
+            <template #title>
+              <el-icon>
+                <component :is="getIconComponent(menu)" v-if="menu.iconCode || menu.meta?.icon"/>
+                <img v-else-if="menu.iconUrl" :src="menu.iconUrl" class="menu-icon-img"/>
+              </el-icon>
+              <span>{{ menu.name }}</span>
+            </template>
+            <!-- 修复：子菜单index直接用child.path（后端返回的绝对路径） -->
+            <el-menu-item
+                v-for="child in menu.children"
+                :key="child.id"
+                :index="child.path"
+            >
+              <el-icon>
+                <component :is="getIconComponent(child)" v-if="child.iconCode || child.meta?.icon"/>
+                <img v-else-if="child.iconUrl" :src="child.iconUrl" class="menu-icon-img"/>
+              </el-icon>
+              <span>{{ child.name }}</span>
+            </el-menu-item>
+          </el-sub-menu>
 
-        <el-sub-menu index="enterprise">
-          <template #title>
+          <!-- 无子女菜单 -->
+          <el-menu-item v-else :key="menu.id" :index="menu.path">
             <el-icon>
-              <OfficeBuilding/>
+              <component :is="getIconComponent(menu)" v-if="menu.iconCode || menu.meta?.icon"/>
+              <img v-else-if="menu.iconUrl" :src="menu.iconUrl" class="menu-icon-img"/>
             </el-icon>
-            <span>企业管理</span>
-          </template>
-          <el-menu-item index="/enterprise/list">
-            <el-icon>
-              <List/>
-            </el-icon>
-            <span>企业列表</span>
+            <span>{{ menu.name }}</span>
           </el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="smeple">
-          <template #title>
-            <el-icon>
-              <UserFilled/>
-            </el-icon>
-            <span>包抓联管理</span>
-          </template>
-          <el-menu-item index="/smeple/dept-user">
-            <el-icon>
-              <OfficeBuilding/>
-            </el-icon>
-            <span>部门人员管理</span>
-          </el-menu-item>
-          <el-menu-item index="/smeple/list">
-            <el-icon>
-              <List/>
-            </el-icon>
-            <span>包抓联列表</span>
-          </el-menu-item>
-          <el-menu-item index="/smeple/handle">
-            <el-icon>
-              <Edit/>
-            </el-icon>
-            <span>问题办理</span>
-          </el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="policy">
-          <template #title>
-            <el-icon>
-              <Document/>
-            </el-icon>
-            <span>政策管理</span>
-          </template>
-          <el-menu-item index="/policy/list">
-            <el-icon>
-              <List/>
-            </el-icon>
-            <span>政策列表</span>
-          </el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="notice">
-          <template #title>
-            <el-icon>
-              <Bell/>
-            </el-icon>
-            <span>通知管理</span>
-          </template>
-          <el-menu-item index="/notice/list">
-            <el-icon>
-              <List/>
-            </el-icon>
-            <span>通知列表</span>
-          </el-menu-item>
-          <el-menu-item index="/notice/form">
-            <el-icon>
-              <Edit/>
-            </el-icon>
-            <span>发布通知</span>
-          </el-menu-item>
-          <el-menu-item index="/notice/my">
-            <el-icon>
-              <Message/>
-            </el-icon>
-            <span>我的通知</span>
-          </el-menu-item>
-        </el-sub-menu>
+        </template>
       </el-menu>
     </el-aside>
 
-    <!-- 主体 -->
+    <!-- 主体内容 -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
@@ -154,46 +67,29 @@
             <Fold v-if="!isCollapse"/>
             <Expand v-else/>
           </el-icon>
-
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
-              <el-breadcrumb-item to="/dashboard">
-                <span>首页</span>
-              </el-breadcrumb-item>
-              <el-breadcrumb-item
-                  v-for="(item, i) in breadcrumbList"
-                  :key="i"
-                  :to="item.path"
-              >
+              <el-breadcrumb-item to="/dashboard"><span>首页</span></el-breadcrumb-item>
+              <el-breadcrumb-item v-for="(item, i) in breadcrumbList" :key="i" :to="item.path">
                 <span>{{ item.title }}</span>
               </el-breadcrumb-item>
-              <el-breadcrumb-item>
-                <span>{{ currentPageTitle }}</span>
-              </el-breadcrumb-item>
+              <!-- 🔥 移除重复的currentPageTitle，面包屑完全由menuList生成 -->
             </el-breadcrumb>
           </div>
         </div>
 
-        <!-- 通知红点 -->
         <div class="header-right"
              style="width: 260px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
-          <el-badge
-              :value="unreadCount"
-              :hidden="unreadCount === 0"
-              class="notice-badge"
-          >
+          <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notice-badge">
             <el-icon class="notice-icon" @click="goMyNotice">
               <Bell/>
             </el-icon>
           </el-badge>
-
           <el-dropdown>
             <span class="user-info">
-              <!-- 头像显示逻辑：有合法URL则显示，否则显示默认头像，背景色与layout一致 -->
               <el-avatar size="32"
                          :src="userStore.userInfo.avatar && userStore.userInfo.avatar.startsWith('http') ? userStore.userInfo.avatar : '/avatar.png'"
-                         class="header-avatar"
-              />
+                         class="header-avatar"/>
               <span>{{ userName }}</span>
             </span>
             <template #dropdown>
@@ -208,7 +104,7 @@
       </el-header>
 
       <el-main class="layout-content">
-        <router-view/>
+        <router-view/> <!-- 仅一层router-view，避免嵌套 -->
       </el-main>
     </el-container>
 
@@ -232,27 +128,18 @@
     <!-- 个人资料弹窗 -->
     <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
       <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
-        <!-- 头像上传 - 背景色与layout一致 -->
         <el-form-item label="头像">
-          <el-upload
-              class="avatar-uploader"
-              action="#"
-              :show-file-list="false"
-              :before-upload="beforeAvatarUpload"
-              :http-request="uploadAvatar"
-          >
+          <el-upload class="avatar-uploader" action="#" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                     :http-request="uploadAvatar">
             <el-avatar size="100"
                        :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
-                       class="avatar-img"
-            >
+                       class="avatar-img">
               <el-icon class="avatar-uploader-icon">
                 <Plus/>
               </el-icon>
             </el-avatar>
           </el-upload>
         </el-form-item>
-
-        <!-- 只读字段 -->
         <el-form-item label="用户账号">
           <el-input v-model="profileForm.username" disabled/>
         </el-form-item>
@@ -265,8 +152,6 @@
         <el-form-item label="账号状态">
           <el-input v-model="profileForm.statusText" disabled/>
         </el-form-item>
-
-        <!-- 可编辑字段 -->
         <el-form-item label="真实姓名" prop="realName">
           <el-input v-model="profileForm.realName" placeholder="请输入真实姓名"/>
         </el-form-item>
@@ -300,88 +185,151 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
+// 侧边栏折叠状态
 const isCollapse = ref(false)
 const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
+// 用户名（适配后端返回的userInfo）
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
+// 菜单列表（直接使用后端返回的树形菜单）
+const menuList = computed(() => userStore.menus || [])
 
-/* 未读数量 */
+// 🔥 关键：适配详情页的菜单高亮（优先使用activeMenu）
+const activeMenuPath = computed(() => {
+  return route.meta.activeMenu || route.path
+})
+
+// 图标映射（完全对齐后端iconCode字段）
+const iconMap = {
+  'home': HomeFilled,
+  'enterprise': OfficeBuilding,
+  'list': List,
+  'edit': Edit,
+  'message': Message,
+  'system': Setting,
+  'user': User,
+  'role': UserFilled,
+  'permission': Menu,
+  'dict': Files,
+  'icon': Picture,
+  'policy': Document,
+  'notice': Bell,
+  'publish-notice': Edit,
+  'notice-list': Bell,
+  'my': User,
+  'problem': Edit,
+  'Menu': Menu // 后端兜底的默认图标
+}
+
+// 获取图标组件（适配后端返回的iconCode/meta.icon）
+const getIconComponent = (menu) => {
+  const iconCode = menu.iconCode || menu.meta?.icon || 'Menu'
+  return iconMap[iconCode] || Menu
+}
+
+// 未读通知数量
 const unreadCount = ref(0)
-
 const getUnreadCount = async () => {
   try {
-    const res = await request({
-      url: '/admin/noticeUser/unreadCount',
-      method: 'get'
-    })
+    const res = await request.get('/admin/noticeUser/unreadCount')
     unreadCount.value = res.data || 0
   } catch (e) {
     console.error('获取未读通知失败', e)
   }
 }
 
-const goMyNotice = () => {
-  router.push('/notice/my')
-}
+// 跳转到我的通知
+const goMyNotice = () => router.push('/notice/my')
 
+// 初始化
 onMounted(() => {
   getUnreadCount()
+  // 通知页面跳转后刷新未读数量
   router.afterEach((to, from) => {
-    if (from.path.startsWith('/notice/')) {
-      getUnreadCount()
-    }
+    if (from.path.startsWith('/notice/')) getUnreadCount()
   })
 })
 
-defineExpose({
-  getUnreadCount
-})
-
-// 面包屑
+// 🔥 核心重构：递归遍历菜单树生成面包屑（彻底解决重复问题）
 const breadcrumbList = computed(() => {
-  const p = route.path
-  if (p.startsWith('/enterprise')) return [{title: '企业管理', path: '/enterprise/list'}]
-  if (p.startsWith('/smeple')) return [{title: '包抓联管理', path: '/smeple/list'}]
-  if (p.startsWith('/policy')) return [{title: '政策管理', path: '/policy/list'}]
-  if (p.startsWith('/notice')) return [{title: '通知管理', path: '/notice/my'}]
-  if (p.startsWith('/user') || p.startsWith('/role') || p.startsWith('/permission') || p.startsWith('/dict') || p.startsWith('/icon')) return [{
-    title: '系统管理',
-    path: '/user/list'
-  }]
-  return []
-})
+  const currentPath = route.path
+  const breadcrumb = []
 
-// 当前页面标题
-const currentPageTitle = computed(() => {
-  const p = route.path
-  if (p === '/enterprise/list') return '企业列表'
-  if (p === '/smeple/list') return '包抓联列表'
-  if (p === '/smeple/handle') return '问题办理'
-  if (p === '/smeple/dept-user') return '部门人员管理'
-  if (p === '/policy/list') return '政策列表'
-  if (p === '/notice/list') return '通知列表'
-  if (p === '/notice/form') return '发布通知'
-  if (p === '/notice/my') return '我的通知'
-  if (p.startsWith('/notice/detail')) return '通知详情'
-  if (p === '/user/list') return '用户管理'
-  if (p === '/role/list') return '角色管理'
-  if (p === '/permission/list') return '菜单管理'
-  if (p === '/dict/list') return '字典管理'
-  if (p.startsWith('/dict/data')) return '字典数据'
-  if (p === '/icon/list') return '图标管理'
-  return ''
-})
-
-const logout = () => {
-  ElMessageBox.confirm(
-      '确定要退出登录吗？',
-      '温馨提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
+  // 1. 递归查找当前路径对应的菜单链（包含所有父级）
+  const findMenuChain = (menus, targetPath, parentChain = []) => {
+    for (const menu of menus) {
+      // 精确匹配菜单路径
+      if (menu.path === targetPath) {
+        return [...parentChain, menu]
       }
-  ).then(async () => {
+      // 处理详情页（通过activeMenu匹配父菜单）
+      if (route.meta.activeMenu && menu.path === route.meta.activeMenu) {
+        const detailItem = {
+          name: route.meta.title || '详情页',
+          path: currentPath
+        }
+        return [...parentChain, menu, detailItem]
+      }
+      // 递归查找子菜单
+      if (menu.children && menu.children.length > 0) {
+        const result = findMenuChain(menu.children, targetPath, [...parentChain, menu])
+        if (result) return result
+      }
+    }
+    return null
+  }
+
+  // 2. 生成面包屑（优先从菜单树获取）
+  const menuChain = findMenuChain(menuList.value, currentPath)
+  if (menuChain) {
+    menuChain.forEach(item => {
+      // 跳过首页（已单独渲染）
+      if (item.path !== '/dashboard') {
+        breadcrumb.push({
+          title: item.name || item.title,
+          path: item.path
+        })
+      }
+    })
+  }
+  // 3. 兜底逻辑（处理无菜单匹配的详情页）
+  else {
+    const pathMap = {
+      '/dict/data': ['系统管理', '字典管理', '字典项管理'],
+      '/notice/detail': ['通知管理', '通知列表', '通知详情'],
+      '/smeple/handle/detail': ['包抓联管理', '问题办理', '进度详情'],
+      '/notice/form': ['通知管理', '发布通知'],
+      '/notice/form/': ['通知管理', '发布通知', '编辑通知'],
+    }
+
+    // 匹配详情页路径
+    for (const [key, titles] of Object.entries(pathMap)) {
+      if (currentPath.startsWith(key)) {
+        const paths = ['/system', '/system/dict', currentPath]
+        if (key.includes('notice')) paths.splice(0, 2, '/notice', '/notice/index')
+        if (key.includes('smeple')) paths.splice(0, 2, '/smePle', '/smePle/handle')
+
+        titles.forEach((title, index) => {
+          breadcrumb.push({
+            title,
+            path: paths[index] || currentPath
+          })
+        })
+        break
+      }
+    }
+  }
+
+  return breadcrumb
+})
+
+// 退出登录
+const logout = () => {
+  ElMessageBox.confirm('确定要退出登录吗？', '温馨提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
     await userStore.logout()
     sessionStorage.clear()
     localStorage.clear()
@@ -392,37 +340,26 @@ const logout = () => {
   })
 }
 
-// --- 修改密码逻辑 ---
+// 修改密码逻辑
 const pwdDialogVisible = ref(false)
 const pwdFormRef = ref(null)
-const pwdForm = ref({
-  password: '',
-  confirm: ''
-})
-
+const pwdForm = ref({password: '', confirm: ''})
 const pwdRules = {
-  password: [
-    {required: true, message: '请输入新密码', trigger: 'blur'},
-    {min: 6, message: '密码长度不能少于6位', trigger: 'blur'}
-  ],
-  confirm: [
-    {required: true, message: '请再次输入新密码', trigger: 'blur'},
-    {
-      validator: (rule, value, callback) => {
-        if (value !== pwdForm.value.password) {
-          callback(new Error('两次输入不一致'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
+  password: [{required: true, message: '请输入新密码', trigger: 'blur'}, {
+    min: 6,
+    message: '密码长度不能少于6位',
+    trigger: 'blur'
+  }],
+  confirm: [{required: true, message: '请再次输入新密码', trigger: 'blur'}, {
+    validator: (rule, value, callback) => {
+      if (value !== pwdForm.value.password) callback(new Error('两次输入不一致'))
+      else callback()
+    }, trigger: 'blur'
+  }]
 }
 
 const openPwdDialog = () => {
-  pwdForm.value.password = ''
-  pwdForm.value.confirm = ''
+  pwdForm.value = {password: '', confirm: ''}
   pwdDialogVisible.value = true
 }
 
@@ -431,38 +368,25 @@ const submitPwd = async () => {
   try {
     await pwdFormRef.value.validate()
     const id = userStore.userInfo.id
-    if (!id) {
-      ElMessage.error('用户信息不完整，无法更新')
-      return
-    }
+    if (!id) throw new Error('用户信息不完整')
     await userApi.updateUserPassword(id, pwdForm.value.password)
     ElMessage.success('密码修改成功')
     pwdDialogVisible.value = false
   } catch (e) {
-    if (e?.fields) return
-    ElMessage.error(e?.msg || e?.message || '密码修改失败')
+    if (!e.fields) ElMessage.error(e.msg || e.message || '密码修改失败')
   }
 }
 
-// --- 个人资料逻辑 ---
+// 个人资料逻辑
 const profileDialogVisible = ref(false)
 const profileFormRef = ref(null)
 const profileForm = ref({
-  id: '',
-  username: '',
-  realName: '',
-  phone: '',
-  avatar: '',
-  deptName: '',
-  roleName: '',
-  status: 1,
-  statusText: ''
+  id: '', username: '', realName: '', phone: '', avatar: '',
+  deptName: '', roleName: '', status: 1, statusText: ''
 })
 
-// 打开个人资料弹窗，初始化数据
 const openProfileDialog = () => {
   const userInfo = userStore.userInfo
-  // 初始化表单数据
   profileForm.value = {
     id: userInfo.id || '',
     username: userInfo.username || '',
@@ -477,30 +401,19 @@ const openProfileDialog = () => {
   profileDialogVisible.value = true
 }
 
-// 头像上传前校验
 const beforeAvatarUpload = (file) => {
   const isImage = file.type.startsWith('image/')
   const isLt2M = file.size / 1024 / 1024 < 2
-
-  if (!isImage) {
-    ElMessage.error('只能上传图片格式文件！')
-    return false
-  }
-  if (!isLt2M) {
-    ElMessage.error('头像图片大小不能超过 2MB！')
-    return false
-  }
-  return true
+  if (!isImage) ElMessage.error('只能上传图片格式文件！')
+  if (!isLt2M) ElMessage.error('头像图片大小不能超过 2MB！')
+  return isImage && isLt2M
 }
 
-// 自定义头像上传逻辑 - 调用api文件中的接口
 const uploadAvatar = async (options) => {
   const file = options.file
   const formData = new FormData()
   formData.append('file', file)
-
   try {
-    // 调用抽离后的上传接口
     const imageUrl = await uploadApi.uploadFile(formData)
     profileForm.value.avatar = imageUrl
     ElMessage.success('头像上传成功')
@@ -509,37 +422,23 @@ const uploadAvatar = async (options) => {
   }
 }
 
-// 提交个人资料修改 - 调用新增的专用接口
 const submitProfile = async () => {
   try {
-    // 先校验表单必填项
-    if (profileFormRef.value) {
-      await profileFormRef.value.validateField(['realName', 'phone'])
-    }
-
+    if (profileFormRef.value) await profileFormRef.value.validateField(['realName', 'phone'])
     const userId = profileForm.value.id
-    if (!userId) {
-      ElMessage.error('用户ID不能为空')
-      return
-    }
+    if (!userId) throw new Error('用户ID不能为空')
 
-    // 构造仅包含允许修改的字段
     const updateData = {
       realName: profileForm.value.realName,
       phone: profileForm.value.phone,
       avatar: profileForm.value.avatar
     }
-
-    // 调用新增的专用个人资料修改接口
     await userApi.updateUserProfile(userId, updateData)
     ElMessage.success('个人资料修改成功')
-
-    // 同步更新store和localStorage
     userStore.updateUserInfo(updateData)
-
     profileDialogVisible.value = false
   } catch (e) {
-    ElMessage.error(e?.msg || e?.message || '个人资料修改失败')
+    ElMessage.error(e.msg || e.message || '个人资料修改失败')
   }
 }
 </script>
@@ -580,6 +479,7 @@ const submitProfile = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0 20px;
 }
 
 .header-left {
@@ -604,6 +504,7 @@ const submitProfile = async () => {
   background: #f5f7fa;
   flex: 1;
   overflow: auto;
+  padding: 20px;
 }
 
 .user-info {
@@ -623,20 +524,22 @@ const submitProfile = async () => {
   cursor: pointer;
 }
 
-/* 修改密码弹窗样式适配 */
+.menu-icon-img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+
 :deep(.el-dialog .el-input__inner[type="password"]) {
   background-color: transparent !important;
 }
 
-/* 个人资料弹窗样式 */
 :deep(.avatar-uploader) {
   display: flex;
   justify-content: center;
 }
 
-/* 头像背景色与layout背景色一致 */
-:deep(.avatar-img),
-:deep(.header-avatar) {
+:deep(.avatar-img), :deep(.header-avatar) {
   cursor: pointer;
   background-color: #f5f7fa !important;
   border: 2px solid #856010;
@@ -649,5 +552,14 @@ const submitProfile = async () => {
   height: 100px;
   line-height: 100px;
   text-align: center;
+}
+
+/* 🔥 修复详情页菜单高亮样式 */
+:deep(.el-menu-item.is-active) {
+  color: #409eff !important;
+  background-color: #ecf5ff !important;
+}
+:deep(.el-sub-menu__title.is-active) {
+  color: #409eff !important;
 }
 </style>

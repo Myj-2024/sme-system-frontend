@@ -7,7 +7,8 @@ import router from './router'
 import App from './App.vue'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
-
+// 新增：引入路由守卫
+import './permission'
 
 // 创建Vue实例
 const app = createApp(App)

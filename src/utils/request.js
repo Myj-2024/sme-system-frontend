@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import router from '@/router'
 
 // ===================== 核心修复：按访问IP判断是否走代理 =====================
@@ -158,13 +158,24 @@ service.interceptors.response.use(
     }
 )
 
-// 简化请求方法
-service.get = (url, params = {}, config = {}) => {
-    return service({ method: 'get', url, params, ...config })
+// ===================== 核心修复：改用普通函数定义 get/post 方法 =====================
+// 修复箭头函数导致的 this 丢失问题
+service.get = function(url, params = {}, config = {}) {
+    return service({
+        method: 'get',
+        url: url,
+        params: params,
+        ...config
+    })
 }
 
-service.post = (url, data = {}, config = {}) => {
-    return service({ method: 'post', url, data, ...config })
+service.post = function(url, data = {}, config = {}) {
+    return service({
+        method: 'post',
+        url: url,
+        data: data,
+        ...config
+    })
 }
 
 service.cancelAllPending = () => {

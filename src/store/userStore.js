@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import request from '@/utils/request'
+import { resetRouter } from '@/router'
 
 export const useUserStore = defineStore('user', {
     state: () => ({
         token: sessionStorage.getItem('token') || '',
-        // 初始化时从localStorage读取，保证刷新后数据不丢失
         userInfo: JSON.parse(localStorage.getItem('userInfo')) || {},
-        menus: [],
+        menus: [], // 存储后端返回的树形菜单
         permissions: []
     }),
 
@@ -24,26 +24,38 @@ export const useUserStore = defineStore('user', {
                 })
 
                 if (res.code === 200) {
-                    const { user, menus, permissions } = res.data
+                    const { user } = res.data
                     this.userInfo = user || {}
-                    this.menus = menus || []
-                    this.permissions = permissions || []
-                    // 登录/刷新时写入缓存
                     localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+                    // 关键：同步加载菜单（后端接口返回树形结构）
+                    await this.loadMenus()
                     return res.data
                 }
-                return Promise.reject(res.message)
+                return Promise.reject(res.message || '获取用户信息失败')
             } catch (error) {
                 console.error('获取用户信息失败:', error)
                 return Promise.reject(error)
             }
         },
 
-        // 新增：更新用户信息并同步缓存（核心修复）
+        async loadMenus() {
+            try {
+                // 后端接口：/admin/user/menu 返回树形结构的PermissionVO列表
+                const res = await request.get('/admin/user/menu')
+                if (res.code === 200) {
+                    this.menus = res.data || []
+                    console.log('【后端返回菜单】', this.menus)
+                    return this.menus
+                }
+                return Promise.reject(res.message || '加载菜单失败')
+            } catch (error) {
+                console.error('加载菜单失败:', error)
+                return Promise.reject(error)
+            }
+        },
+
         updateUserInfo(newInfo) {
-            // 合并新信息到现有userInfo，保留未修改的字段
             this.userInfo = { ...this.userInfo, ...newInfo }
-            // 同步更新localStorage，确保缓存和内存数据一致
             localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
         },
 
@@ -54,6 +66,8 @@ export const useUserStore = defineStore('user', {
             this.permissions = []
             sessionStorage.removeItem('token')
             localStorage.removeItem('userInfo')
+            resetRouter()
+            window.isRoutesLoaded = false
         }
     }
 })
