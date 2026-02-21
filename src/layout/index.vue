@@ -7,7 +7,7 @@
         <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
       </div>
 
-      <!-- 动态菜单渲染（适配后端树形结构） -->
+      <!-- 动态菜单渲染（优先级：iconUrl图片 > iconCode组件 > 默认组件） -->
       <el-menu
           router
           :default-active="activeMenuPath"
@@ -15,33 +15,35 @@
           :collapse-transition="false"
           class="layout-menu"
       >
-        <!-- 首页（静态） -->
+        <!-- 首页（静态）- 混合模式：固定图片图标 -->
         <el-menu-item index="/dashboard">
           <el-icon>
-            <HomeFilled/>
+            <img v-if="false" src="" class="menu-icon-img"/> <!-- 占位保持结构统一 -->
+            <HomeFilled class="menu-icon-component"/>
           </el-icon>
           <span>首页</span>
         </el-menu-item>
 
-        <!-- 动态菜单（修复：子菜单直接使用后端返回的path） -->
+        <!-- 动态菜单 - 核心优化：多优先级图标渲染 -->
         <template v-for="menu in menuList" :key="menu.id">
           <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
             <template #title>
-              <el-icon>
-                <component :is="getIconComponent(menu)" v-if="menu.iconCode || menu.meta?.icon"/>
-                <img v-else-if="menu.iconUrl" :src="menu.iconUrl" class="menu-icon-img"/>
+              <el-icon class="menu-icon-wrapper">
+                <!-- 优先级1：后端返回iconUrl则显示图片 -->
+                <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
+                <!-- 优先级2：无iconUrl则显示Element组件（通过iconCode匹配） -->
+                <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
               </el-icon>
               <span>{{ menu.name }}</span>
             </template>
-            <!-- 修复：子菜单index直接用child.path（后端返回的绝对路径） -->
             <el-menu-item
                 v-for="child in menu.children"
                 :key="child.id"
                 :index="child.path"
             >
-              <el-icon>
-                <component :is="getIconComponent(child)" v-if="child.iconCode || child.meta?.icon"/>
-                <img v-else-if="child.iconUrl" :src="child.iconUrl" class="menu-icon-img"/>
+              <el-icon class="menu-icon-wrapper">
+                <img v-if="child.iconUrl && child.iconUrl.trim()" :src="child.iconUrl" class="menu-icon-img"/>
+                <component v-else :is="getIconComponent(child)" class="menu-icon-component"/>
               </el-icon>
               <span>{{ child.name }}</span>
             </el-menu-item>
@@ -49,9 +51,9 @@
 
           <!-- 无子女菜单 -->
           <el-menu-item v-else :key="menu.id" :index="menu.path">
-            <el-icon>
-              <component :is="getIconComponent(menu)" v-if="menu.iconCode || menu.meta?.icon"/>
-              <img v-else-if="menu.iconUrl" :src="menu.iconUrl" class="menu-icon-img"/>
+            <el-icon class="menu-icon-wrapper">
+              <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
+              <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
             </el-icon>
             <span>{{ menu.name }}</span>
           </el-menu-item>
@@ -59,7 +61,7 @@
       </el-menu>
     </el-aside>
 
-    <!-- 主体内容 -->
+    <!-- 主体内容（无修改） -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
@@ -73,7 +75,6 @@
               <el-breadcrumb-item v-for="(item, i) in breadcrumbList" :key="i" :to="item.path">
                 <span>{{ item.title }}</span>
               </el-breadcrumb-item>
-              <!-- 🔥 移除重复的currentPageTitle，面包屑完全由menuList生成 -->
             </el-breadcrumb>
           </div>
         </div>
@@ -104,7 +105,7 @@
       </el-header>
 
       <el-main class="layout-content">
-        <router-view/> <!-- 仅一层router-view，避免嵌套 -->
+        <router-view/>
       </el-main>
     </el-container>
 
@@ -172,6 +173,7 @@ import {ref, computed, onMounted} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
 import request from '@/utils/request'
+// 导入常用的Element Plus图标（作为兜底）
 import {
   HomeFilled, User, UserFilled, Setting, Menu,
   Expand, OfficeBuilding, Files, Fold, Document, Bell,
@@ -189,28 +191,30 @@ const userStore = useUserStore()
 const isCollapse = ref(false)
 const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
-// 用户名（适配后端返回的userInfo）
+// 用户名
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
-// 菜单列表（直接使用后端返回的树形菜单）
+// 菜单列表
 const menuList = computed(() => userStore.menus || [])
 
-// 🔥 关键：适配详情页的菜单高亮（优先使用activeMenu）
+// 菜单高亮
 const activeMenuPath = computed(() => {
   return route.meta.activeMenu || route.path
 })
 
-// 图标映射（完全对齐后端iconCode字段）
+// 🔥 核心：完善的图标映射表（覆盖后端所有可能的iconCode）
 const iconMap = {
+  // 基础图标
   'home': HomeFilled,
-  'enterprise': OfficeBuilding,
-  'list': List,
-  'edit': Edit,
-  'message': Message,
+  'menu': Menu,
   'system': Setting,
   'user': User,
   'role': UserFilled,
   'permission': Menu,
   'dict': Files,
+  'enterprise': OfficeBuilding,
+  'list': List,
+  'edit': Edit,
+  'message': Message,
   'icon': Picture,
   'policy': Document,
   'notice': Bell,
@@ -218,12 +222,18 @@ const iconMap = {
   'notice-list': Bell,
   'my': User,
   'problem': Edit,
-  'Menu': Menu // 后端兜底的默认图标
+  // 补充后端返回的特殊iconCode
+  'service': Setting,       // 包抓联管理
+  'user-circle': User,      // 部门人员管理
+  // 默认兜底
+  'default': Menu
 }
 
-// 获取图标组件（适配后端返回的iconCode/meta.icon）
+// 🔥 核心：获取图标组件（完善的容错逻辑）
 const getIconComponent = (menu) => {
-  const iconCode = menu.iconCode || menu.meta?.icon || 'Menu'
+  // 1. 获取iconCode（优先menu.iconCode，其次meta.icon）
+  const iconCode = menu.iconCode || menu.meta?.icon || 'default'
+  // 2. 匹配图标组件，无匹配则返回默认Menu图标
   return iconMap[iconCode] || Menu
 }
 
@@ -244,25 +254,21 @@ const goMyNotice = () => router.push('/notice/my')
 // 初始化
 onMounted(() => {
   getUnreadCount()
-  // 通知页面跳转后刷新未读数量
   router.afterEach((to, from) => {
     if (from.path.startsWith('/notice/')) getUnreadCount()
   })
 })
 
-// 🔥 核心重构：递归遍历菜单树生成面包屑（彻底解决重复问题）
+// 面包屑逻辑
 const breadcrumbList = computed(() => {
   const currentPath = route.path
   const breadcrumb = []
 
-  // 1. 递归查找当前路径对应的菜单链（包含所有父级）
   const findMenuChain = (menus, targetPath, parentChain = []) => {
     for (const menu of menus) {
-      // 精确匹配菜单路径
       if (menu.path === targetPath) {
         return [...parentChain, menu]
       }
-      // 处理详情页（通过activeMenu匹配父菜单）
       if (route.meta.activeMenu && menu.path === route.meta.activeMenu) {
         const detailItem = {
           name: route.meta.title || '详情页',
@@ -270,7 +276,6 @@ const breadcrumbList = computed(() => {
         }
         return [...parentChain, menu, detailItem]
       }
-      // 递归查找子菜单
       if (menu.children && menu.children.length > 0) {
         const result = findMenuChain(menu.children, targetPath, [...parentChain, menu])
         if (result) return result
@@ -279,11 +284,9 @@ const breadcrumbList = computed(() => {
     return null
   }
 
-  // 2. 生成面包屑（优先从菜单树获取）
   const menuChain = findMenuChain(menuList.value, currentPath)
   if (menuChain) {
     menuChain.forEach(item => {
-      // 跳过首页（已单独渲染）
       if (item.path !== '/dashboard') {
         breadcrumb.push({
           title: item.name || item.title,
@@ -291,9 +294,7 @@ const breadcrumbList = computed(() => {
         })
       }
     })
-  }
-  // 3. 兜底逻辑（处理无菜单匹配的详情页）
-  else {
+  } else {
     const pathMap = {
       '/dict/data': ['系统管理', '字典管理', '字典项管理'],
       '/notice/detail': ['通知管理', '通知列表', '通知详情'],
@@ -302,7 +303,6 @@ const breadcrumbList = computed(() => {
       '/notice/form/': ['通知管理', '发布通知', '编辑通知'],
     }
 
-    // 匹配详情页路径
     for (const [key, titles] of Object.entries(pathMap)) {
       if (currentPath.startsWith(key)) {
         const paths = ['/system', '/system/dict', currentPath]
@@ -524,10 +524,32 @@ const submitProfile = async () => {
   cursor: pointer;
 }
 
+/* 🔥 核心：统一图标容器样式，确保图片和组件图标视觉一致 */
+.menu-icon-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+}
+
+/* 图片图标样式 */
 .menu-icon-img {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   object-fit: contain;
+  vertical-align: middle;
+}
+
+/* Element组件图标样式 */
+.menu-icon-component {
+  font-size: 18px;
+  color: #48a0fa;
+}
+
+/* 折叠状态下图标居中 */
+:deep(.el-menu--collapse .menu-icon-wrapper) {
+  justify-content: center;
 }
 
 :deep(.el-dialog .el-input__inner[type="password"]) {
@@ -554,12 +576,19 @@ const submitProfile = async () => {
   text-align: center;
 }
 
-/* 🔥 修复详情页菜单高亮样式 */
+/* 菜单高亮样式 */
 :deep(.el-menu-item.is-active) {
   color: #409eff !important;
   background-color: #ecf5ff !important;
 }
+
 :deep(.el-sub-menu__title.is-active) {
+  color: #409eff !important;
+}
+
+/* 高亮状态下的图标颜色同步 */
+:deep(.el-menu-item.is-active .menu-icon-component),
+:deep(.el-sub-menu__title.is-active .menu-icon-component) {
   color: #409eff !important;
 }
 </style>

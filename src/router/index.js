@@ -36,6 +36,7 @@ const componentMap = {
     '@/views/notice/my.vue': () => import('@/views/notice/my.vue'),
     '@/views/system/user.vue': () => import('@/views/system/user.vue'),
     '@/views/system/role.vue': () => import('@/views/system/role.vue'),
+    '@/views/system/icon.vue': () => import('@/views/system/icon.vue'),
     '@/views/system/permission.vue': () => import('@/views/system/permission.vue'),
     '@/views/system/dict.vue': () => import('@/views/system/dict.vue'),
     // 核心详情页组件
