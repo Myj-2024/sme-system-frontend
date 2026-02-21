@@ -565,8 +565,8 @@ onMounted(() => {
   overflow: hidden;
   word-break: break-all;
   font-size: 12px;
-  color: #606266;
   line-height: 1.5;
+  color: #1473e0;
 }
 
 .content-wrapper {
@@ -576,7 +576,7 @@ onMounted(() => {
 
 .clickable-content {
   cursor: pointer;
-  background-color: #ecf5ff;
+  //background-color: #ecf5ff;
 }
 
 .clickable-content:hover {

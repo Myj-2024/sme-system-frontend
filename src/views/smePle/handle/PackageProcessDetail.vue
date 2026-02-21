@@ -128,7 +128,7 @@
             <el-table-column
                 label="操作"
                 align="center"
-                width="120"
+                width="150"
                 v-if="normalizedStatus !== 'COMPLETED'"
             >
               <template #default="{ row }">

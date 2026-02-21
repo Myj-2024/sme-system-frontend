@@ -92,14 +92,14 @@
     <el-dialog
         v-model="userDialogVisible"
         title="选择接收用户"
-        width="800px"
+        width="700px"
         @close="userDialogVisible = false"
     >
       <el-input
           v-model="userSearchQuery"
-          placeholder="请输入用户名/真实姓名搜索"
+          placeholder="请输入用户名/姓名搜索"
           clearable
-          style="margin-bottom: 20px;"
+          style="margin-bottom: 10px;"
           @input="filterUserList"
       />
 
@@ -112,12 +112,12 @@
           @selection-change="handleUserSelectionChange"
           ref="userTableRef"
       >
-        <el-table-column type="selection" width="55"/>
-        <el-table-column prop="id" label="ID" width="80" align="center"/>
+        <el-table-column type="selection" width="50"/>
+        <el-table-column prop="id" label="ID" width="60" align="center"/>
         <el-table-column prop="username" label="用户名" width="120" align="center"/>
-        <el-table-column prop="realName" label="真实姓名" width="120" align="center"/>
+        <el-table-column prop="realName" label="姓名" width="120" align="center"/>
         <el-table-column prop="phone" label="手机号" width="150" align="center"/>
-        <el-table-column prop="deptCode" label="所属部门" width="150" align="center">
+        <el-table-column prop="deptCode" label="所属部门" min-width="150" align="center">
           <template #default="{ row }">
             {{ getDeptName(row.deptCode) }}
           </template>

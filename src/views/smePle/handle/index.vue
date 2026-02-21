@@ -97,6 +97,56 @@
             </div>
           </template>
         </el-table-column>
+        <!-- 办理状态（添加点击事件） -->
+        <el-table-column
+            prop="processStatus"
+            label="办理状态"
+            align="center"
+            width="105"
+        >
+          <template #default="{ row }">
+            <el-tag
+                v-if="normalizeStatus(row.processStatus) === 'HANDLING'"
+                type="warning"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >受理中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'PROCESSING'"
+                type="primary"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >办理中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'FINISHING'"
+                type="info"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >办结中
+            </el-tag>
+            <el-tag
+                v-else-if="normalizeStatus(row.processStatus) === 'COMPLETED'"
+                type="success"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >完全办结
+            </el-tag>
+            <el-tag
+                v-else
+                type="danger"
+                size="small"
+                @click="handleViewProcess(row)"
+                style="cursor: pointer;"
+            >暂无法办结
+            </el-tag>
+          </template>
+        </el-table-column>
         <!-- 包抓领导 -->
         <el-table-column
             prop="leaderName"
@@ -187,56 +237,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <!-- 办理状态（添加点击事件） -->
-        <el-table-column
-            prop="processStatus"
-            label="办理状态"
-            align="center"
-            width="105"
-        >
-          <template #default="{ row }">
-            <el-tag
-                v-if="normalizeStatus(row.processStatus) === 'HANDLING'"
-                type="warning"
-                size="small"
-                @click="handleViewProcess(row)"
-                style="cursor: pointer;"
-            >受理中
-            </el-tag>
-            <el-tag
-                v-else-if="normalizeStatus(row.processStatus) === 'PROCESSING'"
-                type="primary"
-                size="small"
-                @click="handleViewProcess(row)"
-                style="cursor: pointer;"
-            >办理中
-            </el-tag>
-            <el-tag
-                v-else-if="normalizeStatus(row.processStatus) === 'FINISHING'"
-                type="info"
-                size="small"
-                @click="handleViewProcess(row)"
-                style="cursor: pointer;"
-            >办结中
-            </el-tag>
-            <el-tag
-                v-else-if="normalizeStatus(row.processStatus) === 'COMPLETED'"
-                type="success"
-                size="small"
-                @click="handleViewProcess(row)"
-                style="cursor: pointer;"
-            >完全办结
-            </el-tag>
-            <el-tag
-                v-else
-                type="danger"
-                size="small"
-                @click="handleViewProcess(row)"
-                style="cursor: pointer;"
-            >暂无法办结
-            </el-tag>
-          </template>
-        </el-table-column>
+
         <!-- 问题接收时间 -->
         <el-table-column
             prop="problemReceiveTime"

@@ -53,7 +53,7 @@ export const userApi = {
         })
     },
     /**
-     * 编辑用户
+     * 编辑用户（通用接口）
      */
     updateUser: (id, data) => {
         return request({
@@ -111,6 +111,30 @@ export const userApi = {
         return request({
             url: `/admin/user/resetPwd/${userId}`,
             method: 'post'
+        })
+    },
+    /**
+     * 修改用户密码（专门的密码修改接口）
+     * @param {number} userId - 用户ID
+     * @param {string} password - 新密码
+     */
+    updateUserPassword: (userId, password) => {
+        return request({
+            url: `/admin/user/${userId}/password`,
+            method: 'put',
+            data: { password: password }
+        })
+    },
+    /**
+     * 新增：修改个人资料（仅更新姓名、手机号、头像）
+     * @param {number} userId - 用户ID
+     * @param {Object} profile - 个人资料对象（realName/phone/avatar）
+     */
+    updateUserProfile: (userId, profile) => {
+        return request({
+            url: `/admin/user/${userId}/profile`,
+            method: 'put',
+            data: profile
         })
     }
 }

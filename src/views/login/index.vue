@@ -15,7 +15,7 @@
       </div>
       <div class="illustration">
         <img
-            src="/login-illustration.png"
+            src="/login-illustration.jpg"
             alt="系统插画"
             class="illustration-img"
             v-if="illustrationExists"
@@ -186,7 +186,8 @@ onMounted(() => {
 }
 
 .logo {
-  margin-bottom: 30px !important;
+  margin-top: 25px !important;
+  margin-bottom: 15px !important;
   position: relative !important;
   z-index: 2 !important;
 }
@@ -194,7 +195,7 @@ onMounted(() => {
 .logo-img {
   width: 80px !important;
   height: auto !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 5px !important;
   background: transparent !important;
   mix-blend-mode: normal !important;
   filter: none !important;
@@ -221,27 +222,29 @@ onMounted(() => {
   position: relative !important;
   z-index: 2 !important;
   /* 给图片容器添加内边距，让羽化效果更明显 */
-  padding: 20px !important;
+  padding: 15px !important;
 }
 
 .illustration-img {
-  max-width: 90% !important;
-  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 98% !important;
+  max-height: 98% !important;
   object-fit: contain !important;
   /* 核心：添加大面积羽化效果，让图片边界自然过渡 */
   filter: saturate(1.1) brightness(1.08) contrast(0.95)
   drop-shadow(0 8px 30px rgba(0, 136, 204, 0.15)); /* 轻微模糊增强羽化感 */
   /* 超大范围的内阴影模拟羽化效果 */
   box-shadow: inset 0 0 30px 10px rgba(255, 255, 255, 0.8) !important;
-  border-radius: 10px !important;
+  border-radius: 5% !important;
   transition: all 0.5s ease !important;
   /* 关键：添加mask遮罩实现真正的羽化边界 */
   -webkit-mask-image: linear-gradient(to right, transparent 8%, black 20%, black 80%, transparent 92%),
   linear-gradient(to bottom, transparent 8%, black 20%, black 80%, transparent 92%) !important;
-  -webkit-mask-composite: source-in !important;
+  //-webkit-mask-composite: source-in !important;
   mask-composite: intersect !important;
-  mask-image: linear-gradient(to right, transparent 8%, black 20%, black 80%, transparent 92%),
-  linear-gradient(to bottom, transparent 8%, black 20%, black 80%, transparent 92%) !important;
+  //mask-image: linear-gradient(to right, transparent 8%, black 20%, black 80%, transparent 92%),
+  //linear-gradient(to bottom, transparent 8%, black 20%, black 80%, transparent 92%) !important;
 }
 
 // 右侧区域：完全透明背景，融入全局渐变
