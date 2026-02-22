@@ -199,7 +199,7 @@ const handleImgError = (type) => {
 
   .nav-links {
     display: flex;
-    gap: 30px;
+    gap: 40px;
 
     a {
       text-decoration: none;
