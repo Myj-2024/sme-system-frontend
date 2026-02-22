@@ -47,10 +47,10 @@
             <p>请登录您的账号以继续</p>
           </div>
 
-<!--          <div class="tab-switch">-->
-<!--            <div class="tab-item active">政务人员</div>-->
-<!--            <div class="tab-item">企业账号</div>-->
-<!--          </div>-->
+          <!--          <div class="tab-switch">-->
+          <!--            <div class="tab-item active">政务人员</div>-->
+          <!--            <div class="tab-item">企业账号</div>-->
+          <!--          </div>-->
 
           <el-form ref="loginFormRef" :model="form" :rules="rules" class="login-form">
             <el-form-item prop="username">
@@ -67,12 +67,12 @@
               </el-input>
             </el-form-item>
 
-<!--            <div class="captcha-row">-->
-<!--              <div class="captcha-input-wrap">-->
-<!--                <el-input v-model="form.captcha" placeholder="验证码" size="large"></el-input>-->
-<!--              </div>-->
-<!--              <div class="captcha-img-placeholder">4K8B</div>-->
-<!--            </div>-->
+            <!--            <div class="captcha-row">-->
+            <!--              <div class="captcha-input-wrap">-->
+            <!--                <el-input v-model="form.captcha" placeholder="验证码" size="large"></el-input>-->
+            <!--              </div>-->
+            <!--              <div class="captcha-img-placeholder">4K8B</div>-->
+            <!--            </div>-->
             <div class="captcha-section">
               <div class="captcha-label">安全验证</div>
               <div class="captcha-slider-wrapper">
@@ -91,7 +91,7 @@
 
             <div class="form-options">
               <el-checkbox v-model="form.remember">记住我</el-checkbox>
-<!--              <el-link :underline="false" class="forget-pwd">忘记密码？</el-link>-->
+              <!--              <el-link :underline="false" class="forget-pwd">忘记密码？</el-link>-->
             </div>
 
             <el-button
@@ -101,18 +101,18 @@
             >立即登录
             </el-button>
 
-<!--            <div class="third-party-login">-->
-<!--              <p class="divider"><span>其他方式登录</span></p>-->
-<!--              <div class="icon-group">-->
-<!--                <div class="social-icon wechat"></div>-->
-<!--                <div class="social-icon alipay"></div>-->
-<!--                <div class="social-icon mobile"></div>-->
-<!--              </div>-->
-<!--            </div>-->
+            <!--            <div class="third-party-login">-->
+            <!--              <p class="divider"><span>其他方式登录</span></p>-->
+            <!--              <div class="icon-group">-->
+            <!--                <div class="social-icon wechat"></div>-->
+            <!--                <div class="social-icon alipay"></div>-->
+            <!--                <div class="social-icon mobile"></div>-->
+            <!--              </div>-->
+            <!--            </div>-->
 
             <div class="register-link">
               忘记密码请联系管理员进行重置 QQ：3287456080
-<!--              <el-link type="warning">立即注册账号</el-link>-->
+              <!--              <el-link type="warning">立即注册账号</el-link>-->
             </div>
           </el-form>
         </div>
@@ -163,10 +163,41 @@ const handleImgError = (type) => {
 <style scoped lang="scss">
 .login-container {
   height: 100vh;
-  background: radial-gradient(circle at 10% 20%, #f0f4f8 0%, #e2ebf0 100%);
+  /* 核心修改：渐变背景 + 模糊磨砂效果 */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(15px);
+  // 增加背景混合模式，让渐变和纹理融合更好
+  background-blend-mode: overlay;
+  // 确保背景覆盖整个容器
+  background-size: cover;
+  background: linear-gradient(135deg, rgb(255, 220, 194) 0%, rgb(236, 249, 255) 50%, rgba(224, 249, 255, 0.8) 100%),
+  url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23ffffff' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E") center;
+
   display: flex;
   flex-direction: column;
   color: #333;
+  // 增加轻微的阴影层，增强层次感
+  position: relative;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  // 确保子元素在模糊层之上
+  > * {
+    position: relative;
+    z-index: 2;
+  }
 }
 
 /* --- 导航栏 --- */
@@ -175,8 +206,8 @@ const handleImgError = (type) => {
   display: flex;
   align-items: center;
   padding: 10px 5%;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(15px);
   justify-content: space-between;
   position: sticky;
   top: 0;
@@ -260,7 +291,8 @@ const handleImgError = (type) => {
     position: relative;
     width: 420px;
     height: 420px;
-    background: #fff;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(10px);
     border-radius: 24px;
     display: flex;
     justify-content: center;
@@ -274,7 +306,8 @@ const handleImgError = (type) => {
 
     .stat-badge {
       position: absolute;
-      background: #fff;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(8px);
       padding: 10px 15px;
       border-radius: 12px;
       box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
@@ -310,7 +343,8 @@ const handleImgError = (type) => {
   width: 420px;
 
   .login-card {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(15px);
     border-radius: 25px;
     padding: 30px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
@@ -365,9 +399,10 @@ const handleImgError = (type) => {
 }
 
 :deep(.el-input__wrapper) {
-  background-color: #f0f5ff !important;
+  background-color: rgba(240, 245, 255, 0.8) !important;
   box-shadow: none !important;
   border-radius: 10px !important;
+  backdrop-filter: blur(5px);
 }
 
 .captcha-row {
@@ -472,11 +507,12 @@ const handleImgError = (type) => {
 }
 
 .copyright {
-  position: absolute !important;
-  bottom: 15px !important;
-  color: #999 !important;
+  bottom: 25px !important;
+  color: #acacac !important;
   font-size: 12px !important;
   left:40%;
+  position: relative;
+  z-index: 2;
 }
 
 .captcha-section {
@@ -491,7 +527,8 @@ const handleImgError = (type) => {
   .captcha-slider-wrapper {
     position: relative !important;
     padding: 4px 15px !important;
-    background: #f5f7fa !important;
+    background: rgba(245, 247, 250, 0.8) !important;
+    backdrop-filter: blur(5px) !important;
     border-radius: 6px !important;
 
     .slider-hint {
