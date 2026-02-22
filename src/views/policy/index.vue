@@ -41,11 +41,9 @@
               placeholder="请输入政策类型名称"
               clearable
               style="width: 200px;"
-              @keyup.enter="getList"
           />
         </el-form-item>
         <el-form-item label="政策内容">
-          <!-- 保留：查询区使用普通el-input -->
           <el-input
               v-model="queryParams.content"
               placeholder="请输入政策内容关键词"
@@ -64,73 +62,73 @@
     </el-card>
 
     <el-card shadow="hover" class="table-card">
-      <el-table
-          :data="policyList"
-          border
-          v-loading="loading"
-          style="width: 100%; font-size: 12px"
-          :header-cell-style="{ background: '#f8f9fa', color: '#303133', fontWeight: '500' }"
-          :row-style="{ height: '60px' }"
-          :cell-style="{ padding: '10px 0' }"
-          stripe
-          highlight-current-row
-      >
-        <el-table-column label="ID" prop="id" width="80" align="center"/>
-        <el-table-column label="政策标题" prop="title" min-width="150" align="center"/>
-        <el-table-column label="政策类型" prop="policyTypeName" width="100" align="center">
-          <template #default="scope">
-            <el-tag size="small" type="info">{{ scope.row.policyTypeName || '-' }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="发布人" prop="publisherName" width="90" align="center"/>
-        <el-table-column label="政策内容" prop="content" min-width="200" align="center">
-          <template #default="scope">
-            <div
-                class="content-wrapper"
-                @click="viewContentDetail(scope.row)"
-                :class="{ 'clickable-content': getContentTextLength(scope.row.content) > 20 }"
-            >
-              <div class="content-ellipsis" v-html="getContentPreview(scope.row.content)"></div>
+      <div class="list-container">
+        <div
+            v-for="item in policyList"
+            :key="item.id"
+            class="list-item"
+        >
+          <div class="item-left">
+            <div class="item-images">
+              <div
+                  v-for="(img, idx) in getContentImages(item.content)"
+                  :key="idx"
+                  class="item-image"
+              >
+                <img :src="img" alt="政策配图" />
+              </div>
+              <!-- 无图片时占位 -->
+              <div v-if="!getContentImages(item.content).length" class="item-image placeholder">
+                <i class="el-icon-picture-outline"></i>
+              </div>
             </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="发布时间" prop="publishTime" width="120" align="center">
-          <template #default="scope">
-            {{ scope.row.publishTime ? formatDate(scope.row.publishTime) : '-' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="更新时间" prop="updateTime" width="120" align="center">
-          <template #default="scope">
-            {{ scope.row.updateTime ? formatDate(scope.row.updateTime) : '-' }}
-          </template>
-        </el-table-column>
-        <!-- 已删除：状态列 -->
-        <el-table-column label="操作" width="270" align="center">
-          <template #default="scope">
-            <el-switch
-                v-model="scope.row.isTop"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="置顶"
-                @change="handleTopChange(scope.row)"
-                style="margin-right: 10px;"
-                size="small"
-            />
-            <el-switch
-                v-model="scope.row.isShow"
-                :active-value="1"
-                :inactive-value="0"
-                active-text="显示"
-                @change="handleShowChange(scope.row)"
-                style="margin-right: 10px;"
-                :disabled="scope.row.delFlag === 1"
-                size="small"
-            />
-            <el-button link type="primary" @click="handleUpdate(scope.row)" size="small">修改</el-button>
-            <el-button link type="danger" @click="handleDelete(scope.row)" size="small">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+          </div>
+          <div class="item-right">
+            <div class="item-header">
+              <div class="item-title">{{ item.title }}</div>
+              <div class="item-tag-group">
+                <el-tag size="small" type="primary">已发布</el-tag>
+                <el-tag size="small" type="danger">{{ item.policyTypeName}}</el-tag>
+                <el-tag size="small" type="success">{{ item.publisherName }}</el-tag>
+              </div>
+            </div>
+            <div class="item-content" v-html="getContentPreview(item.content)"></div>
+            <div class="item-meta">
+              <span class="meta-item">👤 {{ item.publisherName}}</span>
+              <span class="meta-item">🕒 {{ item.publishTime ? formatDate(item.publishTime) : '-' }}</span>
+            </div>
+            <div class="bottem">
+              <div class="item-detail">
+                <el-button link type="primary" @click="viewContentDetail(item)" size="small">预览</el-button>
+              </div>
+              <!-- 操作按钮固定右下角 - 新增预览按钮在置顶左侧 -->
+              <div class="item-actions">
+                <el-switch
+                    v-model="item.isTop"
+                    :active-value="1"
+                    :inactive-value="0"
+                    inactive-text="置顶"
+                    @change="handleTopChange(item)"
+                    size="small"
+                    style="margin-right: 12px;"
+                />
+                <el-switch
+                    v-model="item.isShow"
+                    :active-value="1"
+                    :inactive-value="0"
+                    inactive-text="显示"
+                    @change="handleShowChange(item)"
+                    :disabled="item.delFlag === 1"
+                    size="small"
+                    style="margin-right: 8px;"
+                />
+                <el-button link type="primary" @click="handleUpdate(item)" size="small">修改</el-button>
+                <el-button link type="danger" @click="handleDelete(item)" size="small">删除</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <el-pagination
           v-show="total > 0"
@@ -171,7 +169,6 @@
           <el-input v-model="form.publisherName" readonly style="width: 100%;"/>
         </el-form-item>
         <el-form-item label="政策内容" prop="content">
-          <!-- 保留：对话框中正常使用富文本编辑器 -->
           <Editor v-model="form.content"/>
         </el-form-item>
         <el-form-item label="发布时间">
@@ -199,13 +196,10 @@
 </template>
 
 <script setup>
-import {ref, onMounted, watch, nextTick} from 'vue';
+import {ref, onMounted, nextTick} from 'vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
-
-// 导入封装好的 Editor 组件
 import Editor from '@/components/Editor.vue';
 
-// 导入 API
 import {
   pagePolicy,
   addPolicy,
@@ -255,14 +249,12 @@ const form = ref({
 
 // 详情弹窗
 const contentDetailVisible = ref(false);
-const currentContent = ref('');
-const processedContent = ref(''); // 处理后的内容，用于渲染
+const processedContent = ref('');
 
 // 自定义校验逻辑：判断富文本是否为空
 const isEditorEmpty = (html) => {
   if (!html || html === '<p><br></p>' || html === '<p></p>' || html === '') return true;
   const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, '').trim();
-  // 如果没有文字但有图片，也不算空
   if (!text && html.includes('<img')) return false;
   return !text;
 };
@@ -297,13 +289,13 @@ const getCurrentUserInfo = () => {
       const user = JSON.parse(userInfo);
       return {
         id: user.id || user.userId || 1,
-        name: user.realName || user.name || '系统管理员'
+        name: user.realName || user.name || '管理员'
       };
     }
   } catch (e) {
     console.error("解析用户信息失败", e);
   }
-  return {id: 1, name: '系统管理员'};
+  return {id: 1, name: '管理员'};
 };
 
 // 工具：格式化日期
@@ -312,43 +304,40 @@ const formatDate = (dateStr) => {
   return dateStr.substring(0, 19).replace('T', ' ');
 };
 
-// 修复核心：计算内容长度时，包含图片/视频等媒体元素（解决纯媒体内容无法点击的问题）
-const getContentTextLength = (htmlContent) => {
-  if (!htmlContent) return 0;
-  // 1. 先计算纯文本长度
-  const textLength = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, '').length;
-  // 2. 检测是否包含图片/视频标签（有则额外加长度，确保能触发点击）
-  const hasMedia = htmlContent.includes('<img') || htmlContent.includes('<video') || htmlContent.includes('<iframe');
-  // 3. 最终长度 = 文本长度 + 媒体元素补偿值（21确保超过20的阈值）
-  return textLength + (hasMedia ? 21 : 0);
+// 提取富文本中的图片（优化图片提取逻辑）
+const getContentImages = (htmlContent) => {
+  if (!htmlContent) return [];
+  const imgRegex = /<img[^>]+src="([^"]+)"/g;
+  const images = [];
+  let match;
+  while ((match = imgRegex.exec(htmlContent)) !== null) {
+    images.push(match[1]);
+    if (images.length >= 4) break; // 最多展示4张图
+  }
+  return images;
 };
 
-// 修复预览逻辑：纯媒体内容时显示提示文字
+// 内容预览处理 - 新增处理HTML实体的逻辑
 const getContentPreview = (htmlContent) => {
   if (!htmlContent) return '';
-  // 提取纯文本
-  const text = htmlContent.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-  // 检测媒体元素
-  const hasMedia = htmlContent.includes('<img') || htmlContent.includes('<video') || htmlContent.includes('<iframe');
 
-  // 纯媒体内容（无文字）：显示提示
-  if (text === '' && hasMedia) {
+  // 1. 先创建一个临时div，将HTML实体转义为正常文本
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = htmlContent;
+  const text = tempDiv.textContent || tempDiv.innerText || '';
+
+  const hasMedia = htmlContent.includes('<img') || htmlContent.includes('<video') || htmlContent.includes('<iframe');
+  if (text.trim() === '' && hasMedia) {
     return '【包含图片/视频等媒体内容，点击查看详情】';
   }
-  // 有文字：正常截断
-  return text.length > 25 ? `${text.substring(0, 25)}...` : text;
+  return text.length > 120 ? `${text.substring(0, 120)}...` : text.trim();
 };
 
-// 新增：处理视频标签，添加兼容性属性
+// 处理视频标签兼容性
 const processVideoTags = (html) => {
   if (!html) return '';
-  // 为所有 <video> 标签添加必要的属性
   return html.replace(/<video([^>]*)>/g, (match, attrs) => {
-    // 如果已经有 controls 属性，就不再添加
-    if (attrs.includes('controls')) {
-      return `<video ${attrs}>`;
-    }
-    // 添加 controls、playsinline 等兼容性属性
+    if (attrs.includes('controls')) return `<video ${attrs}>`;
     return `<video ${attrs} controls playsinline preload="metadata">`;
   });
 };
@@ -423,62 +412,53 @@ const handleUpdate = (row) => {
   });
 };
 
-// 状态切换：置顶（核心优化：仅更新当前行，不刷新全量列表）
+// 置顶状态切换
 const handleTopChange = async (row) => {
-  // 保存原始状态，用于异常回滚
   const oldTopStatus = row.isTop;
   try {
     const res = await changePolicyTopStatus(row.id, row.isTop);
     if (res.code === 200) {
       ElMessage.success('置顶状态修改成功');
-      // 仅更新当前行数据，表格只重渲染这一行
       const targetIndex = policyList.value.findIndex(item => item.id === row.id);
       if (targetIndex !== -1) {
-        // 深拷贝避免直接修改响应式数据导致的异常
         policyList.value[targetIndex] = {
           ...policyList.value[targetIndex],
           isTop: row.isTop,
-          updateTime: new Date().toISOString() // 可选：更新修改时间
+          updateTime: new Date().toISOString()
         };
       }
     } else {
-      // 接口失败时回滚开关状态
       row.isTop = oldTopStatus;
       ElMessage.error(res.message || '置顶状态修改失败');
     }
   } catch (e) {
-    // 网络异常时回滚开关状态
     row.isTop = oldTopStatus;
     ElMessage.error('网络异常，置顶状态修改失败');
     console.error('置顶状态修改异常：', e);
   }
 };
 
-// 状态切换：显示（核心优化：仅更新当前行，不刷新全量列表）
+// 显示状态切换
 const handleShowChange = async (row) => {
-  // 保存原始状态，用于异常回滚
   const oldShowStatus = row.isShow;
   try {
     const res = await changePolicyShowStatus(row.id, row.isShow);
     if (res.code === 200) {
       ElMessage.success('显示状态修改成功');
-      // 仅更新当前行数据，表格只重渲染这一行
       const targetIndex = policyList.value.findIndex(item => item.id === row.id);
       if (targetIndex !== -1) {
         policyList.value[targetIndex] = {
           ...policyList.value[targetIndex],
           isShow: row.isShow,
-          delFlag: row.isShow === 0 ? 1 : 0, // 保留业务逻辑，仅删除UI展示
-          updateTime: new Date().toISOString() // 可选：更新修改时间
+          delFlag: row.isShow === 0 ? 1 : 0,
+          updateTime: new Date().toISOString()
         };
       }
     } else {
-      // 接口失败时回滚开关状态
       row.isShow = oldShowStatus;
       ElMessage.error(res.message || '显示状态修改失败');
     }
   } catch (e) {
-    // 网络异常时回滚开关状态
     row.isShow = oldShowStatus;
     ElMessage.error('网络异常，显示状态修改失败');
     console.error('显示状态修改异常：', e);
@@ -491,7 +471,6 @@ const handleDelete = (row) => {
     const res = await deletePolicy(row.id);
     if (res.code === 200) {
       ElMessage.success('删除成功');
-      // 删除操作仍需刷新列表，因为行数据要移除
       getList();
     }
   });
@@ -506,7 +485,6 @@ const handleBatchShowHidden = async () => {
     const res = await batchShowPolicies(ids);
     if (res.code === 200) {
       ElMessage.success('恢复成功');
-      // 批量操作涉及多行变更，仍需刷新列表
       getList();
     }
   } catch (e) {
@@ -523,7 +501,6 @@ const submitForm = async () => {
       if (res.code === 200) {
         ElMessage.success('保存成功');
         open.value = false;
-        // 新增/修改操作仍需刷新列表，确保数据最新
         getList();
       } else {
         ElMessage.error(res.message);
@@ -532,15 +509,13 @@ const submitForm = async () => {
   });
 };
 
+// 查看详情（预览）
 const viewContentDetail = (row) => {
-  if (getContentTextLength(row.content) > 20) {
-    currentContent.value = row.content;
-    // 处理视频标签，添加兼容性属性
-    processedContent.value = processVideoTags(row.content);
-    contentDetailVisible.value = true;
-  }
+  processedContent.value = processVideoTags(row.content);
+  contentDetailVisible.value = true;
 };
 
+// 获取政策类型列表
 const getPolicyTypeList = async () => {
   const res = await getPolicyTypeOptions();
   if (res.code === 200) policyTypeOptions.value = res.data || [];
@@ -558,29 +533,145 @@ onMounted(() => {
   min-height: calc(100vh - 84px);
 }
 
-.content-ellipsis {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+/* 列表容器样式 */
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 单条数据项样式 - 卡片化 */
+.list-item {
+  display: flex;
+  border: rgba(213, 213, 213, 0.56) 1px solid;
+  gap: 16px;
+  padding: 15px;
+  background-color: #fff;
+  transition: box-shadow 0.2s ease;
+  border-radius: 8px;
+}
+
+.list-item:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* 左侧图片区域 - 修复图片显示不完整问题 */
+.item-left {
+  flex-shrink: 0;
+  width: 90px;
+  margin-right: 10px;
+  margin-left: 5px;
+}
+
+.item-images {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  height: 140px;
   overflow: hidden;
+}
+
+.item-image {
+  width: 90px;  /* 固定宽度，避免变形 */
+  height: 90px; /* 固定高度，避免变形 */
+  background-color: #f8f9fa;
+  overflow: hidden;
+}
+
+.item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 覆盖模式，保证图片完整显示 */
+  display: block;     /* 去除图片默认间隙 */
+}
+
+/* 无图片占位 */
+.item-image.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c0c4cc;
+  font-size: 24px;
+}
+
+/* 右侧内容区域 */
+.item-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 140px; /* 保证容器高度，避免按钮错位 */
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.item-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.4;
+  max-width: 70%;
+}
+
+.item-tag-group {
+  display: flex;
+  gap: 10px;
+}
+
+.item-content {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+  margin-bottom: 12px;
   word-break: break-all;
+}
+
+.item-meta {
+  display: flex;
+  gap: 16px;
   font-size: 12px;
-  line-height: 1.5;
-  color: #1473e0;
+  color: #909399;
+  margin-bottom: 20px; /* 预留按钮空间 */
 }
 
-.content-wrapper {
-  padding: 8px;
-  border-radius: 4px;
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.clickable-content {
-  cursor: pointer;
-  //background-color: #ecf5ff;
+.bottem{
+  border-top: rgba(209, 209, 209, 0.57) 1px solid;
 }
 
-.clickable-content:hover {
-  background-color: #d9ecff;
+.item-detail {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* 操作按钮 - 固定右下角，预览按钮在置顶左侧 */
+.item-actions {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 详情弹窗样式 */
+.content-detail {
+  padding: 16px;
+  line-height: 1.8;
+  font-size: 14px;
 }
 
 .content-detail :deep(img) {
@@ -590,7 +681,6 @@ onMounted(() => {
   margin: 10px auto;
 }
 
-/* 适配视频/iframe样式 */
 .content-detail :deep(video),
 .content-detail :deep(iframe) {
   max-width: 100%;
@@ -599,24 +689,31 @@ onMounted(() => {
   margin: 10px auto;
 }
 
-/* 视频播放器样式优化 */
-.content-detail :deep(video) {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
+/* 表格卡片样式 */
 .table-card {
-  margin-top: 10px;
+  background-color: #fff;
+  padding: 10px;
 }
 
-:deep(.el-table__header) {
-  th {
-    background-color: #f8f9fa !important;
-  }
+/* 分页样式 */
+:deep(.el-pagination) {
+  margin-top: 20px;
 }
 
-/* 可选：优化开关切换时的视觉体验 */
+/* 开关样式优化 */
 :deep(.el-switch) {
-  transition: all 0.2s ease;
+  margin: 0;
 }
+
+:deep(.el-switch__label) {
+  font-size: 12px;
+}
+
+/* 按钮样式优化 */
+:deep(.el-button--link) {
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+
 </style>

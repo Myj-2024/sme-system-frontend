@@ -6,8 +6,8 @@ export const useUserStore = defineStore('user', {
     state: () => ({
         token: sessionStorage.getItem('token') || '',
         userInfo: JSON.parse(localStorage.getItem('userInfo')) || {},
-        menus: [], // 存储后端返回的树形菜单
-        permissions: []
+        menus: [],
+        routesLoaded: false
     }),
 
     actions: {
@@ -17,57 +17,40 @@ export const useUserStore = defineStore('user', {
         },
 
         async fetchUserInfo() {
-            try {
-                const res = await request({
-                    url: '/admin/user/info',
-                    method: 'get'
-                })
-
-                if (res.code === 200) {
-                    const { user } = res.data
-                    this.userInfo = user || {}
-                    localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
-                    // 关键：同步加载菜单（后端接口返回树形结构）
-                    await this.loadMenus()
-                    return res.data
-                }
-                return Promise.reject(res.message || '获取用户信息失败')
-            } catch (error) {
-                console.error('获取用户信息失败:', error)
-                return Promise.reject(error)
+            const res = await request.get('/admin/user/info')
+            if (res.code !== 200) {
+                return Promise.reject(res.message)
             }
+
+            this.userInfo = res.data.user || {}
+            localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+
+            await this.loadMenus()
         },
 
         async loadMenus() {
-            try {
-                // 后端接口：/admin/user/menu 返回树形结构的PermissionVO列表
-                const res = await request.get('/admin/user/menu')
-                if (res.code === 200) {
-                    this.menus = res.data || []
-                    console.log('【后端返回菜单】', this.menus)
-                    return this.menus
-                }
-                return Promise.reject(res.message || '加载菜单失败')
-            } catch (error) {
-                console.error('加载菜单失败:', error)
-                return Promise.reject(error)
+            const res = await request.get('/admin/user/menu')
+            if (res.code !== 200) {
+                return Promise.reject(res.message)
             }
+
+            this.menus = res.data || []
         },
 
-        updateUserInfo(newInfo) {
-            this.userInfo = { ...this.userInfo, ...newInfo }
-            localStorage.setItem('userInfo', JSON.stringify(this.userInfo))
+        setRoutesLoaded(status) {
+            this.routesLoaded = status
         },
 
         logout() {
             this.token = ''
             this.userInfo = {}
             this.menus = []
-            this.permissions = []
+            this.routesLoaded = false
+
             sessionStorage.removeItem('token')
             localStorage.removeItem('userInfo')
+
             resetRouter()
-            window.isRoutesLoaded = false
         }
     }
 })

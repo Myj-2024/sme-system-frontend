@@ -7,7 +7,6 @@
         <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
       </div>
 
-      <!-- 动态菜单渲染（优先级：iconUrl图片 > iconCode组件 > 默认组件） -->
       <el-menu
           router
           :default-active="activeMenuPath"
@@ -15,53 +14,84 @@
           :collapse-transition="false"
           class="layout-menu"
       >
-        <!-- 首页（静态）- 混合模式：固定图片图标 -->
+        <!-- 首页 -->
         <el-menu-item index="/dashboard">
           <el-icon>
-            <img v-if="false" src="" class="menu-icon-img"/> <!-- 占位保持结构统一 -->
             <HomeFilled class="menu-icon-component"/>
           </el-icon>
           <span>首页</span>
         </el-menu-item>
 
-        <!-- 动态菜单 - 核心优化：多优先级图标渲染 -->
-        <template v-for="menu in menuList" :key="menu.id">
-          <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
+        <!-- 🔥 动态菜单（自动过滤隐藏） -->
+        <template v-for="menu in filteredMenus" :key="menu.id">
+
+          <!-- 有子菜单 -->
+          <el-sub-menu
+              v-if="menu.children && menu.children.length > 0"
+              :index="menu.path"
+          >
             <template #title>
               <el-icon class="menu-icon-wrapper">
-                <!-- 优先级1：后端返回iconUrl则显示图片 -->
-                <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
-                <!-- 优先级2：无iconUrl则显示Element组件（通过iconCode匹配） -->
-                <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
+                <img
+                    v-if="menu.iconUrl && menu.iconUrl.trim()"
+                    :src="menu.iconUrl"
+                    class="menu-icon-img"
+                />
+                <component
+                    v-else
+                    :is="getIconComponent(menu)"
+                    class="menu-icon-component"
+                />
               </el-icon>
               <span>{{ menu.name }}</span>
             </template>
+
             <el-menu-item
-                v-for="child in menu.children"
+                v-for="child in menu.children.filter(c => c.is_hidden !== 1)"
                 :key="child.id"
                 :index="child.path"
             >
               <el-icon class="menu-icon-wrapper">
-                <img v-if="child.iconUrl && child.iconUrl.trim()" :src="child.iconUrl" class="menu-icon-img"/>
-                <component v-else :is="getIconComponent(child)" class="menu-icon-component"/>
+                <img
+                    v-if="child.iconUrl && child.iconUrl.trim()"
+                    :src="child.iconUrl"
+                    class="menu-icon-img"
+                />
+                <component
+                    v-else
+                    :is="getIconComponent(child)"
+                    class="menu-icon-component"
+                />
               </el-icon>
               <span>{{ child.name }}</span>
             </el-menu-item>
           </el-sub-menu>
 
-          <!-- 无子女菜单 -->
-          <el-menu-item v-else :key="menu.id" :index="menu.path">
+          <!-- 无子菜单 -->
+          <el-menu-item
+              v-else
+              :index="menu.path"
+          >
             <el-icon class="menu-icon-wrapper">
-              <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
-              <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
+              <img
+                  v-if="menu.iconUrl && menu.iconUrl.trim()"
+                  :src="menu.iconUrl"
+                  class="menu-icon-img"
+              />
+              <component
+                  v-else
+                  :is="getIconComponent(menu)"
+                  class="menu-icon-component"
+              />
             </el-icon>
             <span>{{ menu.name }}</span>
           </el-menu-item>
+
         </template>
       </el-menu>
     </el-aside>
 
-    <!-- 主体内容（无修改） -->
+    <!-- 主体 -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
@@ -69,11 +99,16 @@
             <Fold v-if="!isCollapse"/>
             <Expand v-else/>
           </el-icon>
+
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
-              <el-breadcrumb-item to="/dashboard"><span>首页</span></el-breadcrumb-item>
-              <el-breadcrumb-item v-for="(item, i) in breadcrumbList" :key="i" :to="item.path">
-                <span>{{ item.title }}</span>
+              <el-breadcrumb-item to="/dashboard">首页</el-breadcrumb-item>
+              <el-breadcrumb-item
+                  v-for="(item, index) in breadcrumbList"
+                  :key="index"
+                  :to="item.path"
+              >
+                {{ item.title }}
               </el-breadcrumb-item>
             </el-breadcrumb>
           </div>
@@ -81,11 +116,13 @@
 
         <div class="header-right"
              style="width: 260px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
+
           <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notice-badge">
             <el-icon class="notice-icon" @click="goMyNotice">
               <Bell/>
             </el-icon>
           </el-badge>
+
           <el-dropdown>
             <span class="user-info">
               <el-avatar size="32"
@@ -101,6 +138,64 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          <!-- 修改密码弹窗 -->
+          <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
+            <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
+              <el-form-item label="新密码" prop="password">
+                <el-input v-model="pwdForm.password" type="password" autocomplete="new-password" placeholder="请输入新密码"/>
+              </el-form-item>
+              <el-form-item label="确认密码" prop="confirm">
+                <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password"
+                          placeholder="请再次输入新密码"/>
+              </el-form-item>
+            </el-form>
+            <template #footer>
+              <el-button @click="pwdDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitPwd">确定</el-button>
+            </template>
+          </el-dialog>
+
+          <!-- 个人资料弹窗 -->
+          <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
+            <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
+              <el-form-item label="头像">
+                <el-upload class="avatar-uploader" action="#" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                           :http-request="uploadAvatar">
+                  <el-avatar size="100"
+                             :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
+                             class="avatar-img">
+                    <el-icon class="avatar-uploader-icon">
+                      <Plus/>
+                    </el-icon>
+                  </el-avatar>
+                </el-upload>
+              </el-form-item>
+              <el-form-item label="用户账号">
+                <el-input v-model="profileForm.username" disabled/>
+              </el-form-item>
+              <el-form-item label="所属部门">
+                <el-input v-model="profileForm.deptName" disabled/>
+              </el-form-item>
+              <el-form-item label="角色名称">
+                <el-input v-model="profileForm.roleName" disabled/>
+              </el-form-item>
+              <el-form-item label="账号状态">
+                <el-input v-model="profileForm.statusText" disabled/>
+              </el-form-item>
+              <el-form-item label="真实姓名" prop="realName">
+                <el-input v-model="profileForm.realName" placeholder="请输入真实姓名"/>
+              </el-form-item>
+              <el-form-item label="手机号" prop="phone">
+                <el-input v-model="profileForm.phone" placeholder="请输入手机号"/>
+              </el-form-item>
+            </el-form>
+            <template #footer>
+              <el-button @click="profileDialogVisible = false">取消</el-button>
+              <el-button type="primary" @click="submitProfile">保存修改</el-button>
+            </template>
+          </el-dialog>
+
+
         </div>
       </el-header>
 
@@ -108,63 +203,6 @@
         <router-view/>
       </el-main>
     </el-container>
-
-    <!-- 修改密码弹窗 -->
-    <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
-      <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
-        <el-form-item label="新密码" prop="password">
-          <el-input v-model="pwdForm.password" type="password" autocomplete="new-password" placeholder="请输入新密码"/>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirm">
-          <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password"
-                    placeholder="请再次输入新密码"/>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="pwdDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitPwd">确定</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 个人资料弹窗 -->
-    <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
-      <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
-        <el-form-item label="头像">
-          <el-upload class="avatar-uploader" action="#" :show-file-list="false" :before-upload="beforeAvatarUpload"
-                     :http-request="uploadAvatar">
-            <el-avatar size="100"
-                       :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
-                       class="avatar-img">
-              <el-icon class="avatar-uploader-icon">
-                <Plus/>
-              </el-icon>
-            </el-avatar>
-          </el-upload>
-        </el-form-item>
-        <el-form-item label="用户账号">
-          <el-input v-model="profileForm.username" disabled/>
-        </el-form-item>
-        <el-form-item label="所属部门">
-          <el-input v-model="profileForm.deptName" disabled/>
-        </el-form-item>
-        <el-form-item label="角色名称">
-          <el-input v-model="profileForm.roleName" disabled/>
-        </el-form-item>
-        <el-form-item label="账号状态">
-          <el-input v-model="profileForm.statusText" disabled/>
-        </el-form-item>
-        <el-form-item label="真实姓名" prop="realName">
-          <el-input v-model="profileForm.realName" placeholder="请输入真实姓名"/>
-        </el-form-item>
-        <el-form-item label="手机号" prop="phone">
-          <el-input v-model="profileForm.phone" placeholder="请输入手机号"/>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="profileDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitProfile">保存修改</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -173,7 +211,6 @@ import {ref, computed, onMounted} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
 import request from '@/utils/request'
-// 导入常用的Element Plus图标（作为兜底）
 import {
   HomeFilled, User, UserFilled, Setting, Menu,
   Expand, OfficeBuilding, Files, Fold, Document, Bell,
@@ -187,141 +224,132 @@ const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-// 侧边栏折叠状态
 const isCollapse = ref(false)
 const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
-// 用户名
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
-// 菜单列表
-const menuList = computed(() => userStore.menus || [])
 
-// 菜单高亮
+/**
+ * 🔥 自动递归过滤隐藏菜单 + 详情页(type !== 1)
+ */
+const filteredMenus = computed(() => {
+
+  const deepFilter = (menus) => {
+    return (menus || [])
+        .filter(menu => {
+          // 只显示 type === 1 的菜单
+          if (menu.type !== 1) return false
+
+          // 过滤隐藏菜单
+          if (menu.is_hidden === 1) return false
+
+          return true
+        })
+        .map(menu => {
+          if (menu.children && menu.children.length > 0) {
+            return {
+              ...menu,
+              children: deepFilter(menu.children)
+            }
+          }
+          return menu
+        })
+  }
+
+  return deepFilter(userStore.menus)
+})
+
+/**
+ * 🔥 自动高亮支持详情页
+ */
 const activeMenuPath = computed(() => {
   return route.meta.activeMenu || route.path
 })
 
-// 🔥 核心：完善的图标映射表（覆盖后端所有可能的iconCode）
+/**
+ * 图标映射
+ */
 const iconMap = {
-  // 基础图标
-  'home': HomeFilled,
-  'menu': Menu,
-  'system': Setting,
-  'user': User,
-  'role': UserFilled,
-  'permission': Menu,
-  'dict': Files,
-  'enterprise': OfficeBuilding,
-  'list': List,
-  'edit': Edit,
-  'message': Message,
-  'icon': Picture,
-  'policy': Document,
-  'notice': Bell,
-  'publish-notice': Edit,
-  'notice-list': Bell,
-  'my': User,
-  'problem': Edit,
-  // 补充后端返回的特殊iconCode
-  'service': Setting,       // 包抓联管理
-  'user-circle': User,      // 部门人员管理
-  // 默认兜底
-  'default': Menu
+  home: HomeFilled,
+  menu: Menu,
+  system: Setting,
+  user: User,
+  role: UserFilled,
+  dict: Files,
+  enterprise: OfficeBuilding,
+  list: List,
+  edit: Edit,
+  message: Message,
+  icon: Picture,
+  policy: Document,
+  notice: Bell,
+  default: Menu
 }
 
-// 🔥 核心：获取图标组件（完善的容错逻辑）
 const getIconComponent = (menu) => {
-  // 1. 获取iconCode（优先menu.iconCode，其次meta.icon）
   const iconCode = menu.iconCode || menu.meta?.icon || 'default'
-  // 2. 匹配图标组件，无匹配则返回默认Menu图标
   return iconMap[iconCode] || Menu
 }
 
-// 未读通知数量
-const unreadCount = ref(0)
-const getUnreadCount = async () => {
-  try {
-    const res = await request.get('/admin/noticeUser/unreadCount')
-    unreadCount.value = res.data || 0
-  } catch (e) {
-    console.error('获取未读通知失败', e)
-  }
-}
-
-// 跳转到我的通知
-const goMyNotice = () => router.push('/notice/my')
-
-// 初始化
-onMounted(() => {
-  getUnreadCount()
-  router.afterEach((to, from) => {
-    if (from.path.startsWith('/notice/')) getUnreadCount()
-  })
-})
-
-// 面包屑逻辑
+/**
+ * 面包屑 —— 完全动态
+ */
 const breadcrumbList = computed(() => {
-  const currentPath = route.path
-  const breadcrumb = []
 
-  const findMenuChain = (menus, targetPath, parentChain = []) => {
+  const result = []
+
+  const findPath = (menus, targetPath, parentChain = []) => {
     for (const menu of menus) {
       if (menu.path === targetPath) {
         return [...parentChain, menu]
       }
+
       if (route.meta.activeMenu && menu.path === route.meta.activeMenu) {
-        const detailItem = {
-          name: route.meta.title || '详情页',
-          path: currentPath
-        }
-        return [...parentChain, menu, detailItem]
+        return [...parentChain, menu, {
+          name: route.meta.title,
+          path: route.path
+        }]
       }
-      if (menu.children && menu.children.length > 0) {
-        const result = findMenuChain(menu.children, targetPath, [...parentChain, menu])
-        if (result) return result
+
+      if (menu.children) {
+        const found = findPath(menu.children, targetPath, [...parentChain, menu])
+        if (found) return found
       }
     }
     return null
   }
 
-  const menuChain = findMenuChain(menuList.value, currentPath)
-  if (menuChain) {
-    menuChain.forEach(item => {
-      if (item.path !== '/dashboard') {
-        breadcrumb.push({
-          title: item.name || item.title,
-          path: item.path
-        })
-      }
+  const chain = findPath(userStore.menus, route.path)
+
+  if (chain) {
+    chain.forEach(item => {
+      result.push({
+        title: item.name,
+        path: item.path
+      })
     })
-  } else {
-    const pathMap = {
-      '/dict/data': ['系统管理', '字典管理', '字典项管理'],
-      '/notice/detail': ['通知管理', '通知列表', '通知详情'],
-      '/smeple/handle/detail': ['包抓联管理', '问题办理', '进度详情'],
-      '/notice/form': ['通知管理', '发布通知'],
-      '/notice/form/': ['通知管理', '发布通知', '编辑通知'],
-    }
-
-    for (const [key, titles] of Object.entries(pathMap)) {
-      if (currentPath.startsWith(key)) {
-        const paths = ['/system', '/system/dict', currentPath]
-        if (key.includes('notice')) paths.splice(0, 2, '/notice', '/notice/index')
-        if (key.includes('smeple')) paths.splice(0, 2, '/smePle', '/smePle/handle')
-
-        titles.forEach((title, index) => {
-          breadcrumb.push({
-            title,
-            path: paths[index] || currentPath
-          })
-        })
-        break
-      }
-    }
   }
 
-  return breadcrumb
+  return result
 })
+
+/**
+ * 通知数量
+ */
+const unreadCount = ref(0)
+const getUnreadCount = async () => {
+  try {
+    const res = await request.get('/admin/noticeUser/unreadCount')
+    unreadCount.value = res.data || 0
+  } catch (e) {}
+}
+
+const goMyNotice = () => router.push('/notice/my')
+
+onMounted(() => {
+  getUnreadCount()
+})
+
 
 // 退出登录
 const logout = () => {
