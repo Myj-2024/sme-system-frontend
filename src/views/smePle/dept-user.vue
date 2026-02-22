@@ -47,7 +47,7 @@
       </el-form>
     </el-card>
     <el-card shadow="never">
-      <el-table :data="deptList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px">
+      <el-table :data="deptList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px; font-size: 12px;">
         <el-table-column prop="deptCode" label="部门编码" align="center" width="150" />
         <el-table-column prop="deptName" label="部门名称" align="center" />
         <el-table-column prop="leader" label="负责人" align="center" />

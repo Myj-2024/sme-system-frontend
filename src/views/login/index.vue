@@ -1,125 +1,143 @@
 <template>
   <div class="login-container">
-    <div class="login-left">
-      <div class="brand-info">
-        <div class="logo-wrapper">
-          <img
-              src="/logo.png"
-              alt="logo"
-              class="logo-img"
-              v-if="logoExists"
-              @error="handleImgError('logo')"
-          />
-          <span class="brand-title">广河县中小微企业服务系统</span>
+    <header class="nav-header">
+      <div class="nav-left">
+        <div class="logo-box">
+          <img src="/logo.png" alt="logo" v-if="logoExists" @error="handleImgError('logo')"/>
+          <span class="nav-brand">广河县中小微企业服务平台</span>
         </div>
-        <div class="illustration">
+      </div>
+      <nav class="nav-links">
+        <a href="#">首页</a>
+        <a href="#">政策通告</a>
+        <a href="#">办事指南</a>
+        <a href="#">企业风采</a>
+        <a href="#">联系我们</a>
+      </nav>
+      <div class="nav-right">
+        <i class="el-icon-global"></i>
+        <el-button border size="small" class="register-btn">注册账号</el-button>
+      </div>
+    </header>
+
+    <main class="login-content">
+      <div class="content-left">
+        <div class="brand-slogan">
+          <h1><span class="highlight">“一站式”综合服务平台</span></h1>
+          <p class="sub-desc">助力企业数字化转型，提供政策对接、问题办理等全方位服务。</p>
+        </div>
+        <div class="hero-image-wrapper">
+          <div class="stat-badge top-left">服务企业 <span>500+</span></div>
+          <div class="stat-badge mid-right">办结率 <span>99.8%</span></div>
+          <div class="stat-badge bottom-mid">融资总额 <span>￥5.8亿</span></div>
           <img
               src="/login-illustration.png"
-              alt="系统插画"
-              class="illustration-img"
+              alt="illustration"
+              class="main-hero-img"
               v-if="illustrationExists"
               @error="handleImgError('illustration')"
           />
         </div>
-        <div class="brand-text">
-          <p class="main-title">数智助企，聚力兴商 — 中小微企业发展新引擎</p>
+      </div>
+
+      <div class="content-right">
+        <div class="login-card">
+          <div class="card-header">
+            <h2>👏欢迎回来</h2>
+            <p>请登录您的账号以继续</p>
+          </div>
+
+<!--          <div class="tab-switch">-->
+<!--            <div class="tab-item active">政务人员</div>-->
+<!--            <div class="tab-item">企业账号</div>-->
+<!--          </div>-->
+
+          <el-form ref="loginFormRef" :model="form" :rules="rules" class="login-form">
+            <el-form-item prop="username">
+              <label class="input-label">用户名</label>
+              <el-input v-model="form.username" placeholder="请输入账号" size="large">
+                <template #prefix><i class="el-icon-user"></i></template>
+              </el-input>
+            </el-form-item>
+
+            <el-form-item prop="password">
+              <label class="input-label">密码</label>
+              <el-input v-model="form.password" type="password" placeholder="请输入密码" show-password size="large">
+                <template #prefix><i class="el-icon-lock"></i></template>
+              </el-input>
+            </el-form-item>
+
+<!--            <div class="captcha-row">-->
+<!--              <div class="captcha-input-wrap">-->
+<!--                <el-input v-model="form.captcha" placeholder="验证码" size="large"></el-input>-->
+<!--              </div>-->
+<!--              <div class="captcha-img-placeholder">4K8B</div>-->
+<!--            </div>-->
+            <div class="captcha-section">
+              <div class="captcha-label">安全验证</div>
+              <div class="captcha-slider-wrapper">
+                <el-slider
+                    v-model="sliderValue"
+                    :min="0"
+                    :max="100"
+                    :disabled="sliderSuccess"
+                    :show-tooltip="false"
+                    @change="handleSliderChange"
+                />
+                <span class="slider-hint" v-if="!sliderSuccess">请按住滑块拖动</span>
+                <span class="slider-hint success" v-else>验证通过</span>
+              </div>
+            </div>
+
+            <div class="form-options">
+              <el-checkbox v-model="form.remember">记住我</el-checkbox>
+<!--              <el-link :underline="false" class="forget-pwd">忘记密码？</el-link>-->
+            </div>
+
+            <el-button
+                type="primary"
+                class="submit-btn"
+                @click="handleLogin"
+            >立即登录
+            </el-button>
+
+<!--            <div class="third-party-login">-->
+<!--              <p class="divider"><span>其他方式登录</span></p>-->
+<!--              <div class="icon-group">-->
+<!--                <div class="social-icon wechat"></div>-->
+<!--                <div class="social-icon alipay"></div>-->
+<!--                <div class="social-icon mobile"></div>-->
+<!--              </div>-->
+<!--            </div>-->
+
+            <div class="register-link">
+              忘记密码请联系管理员进行重置 QQ：3287456080
+<!--              <el-link type="warning">立即注册账号</el-link>-->
+            </div>
+          </el-form>
         </div>
       </div>
-    </div>
-
-    <div class="login-right">
-      <div class="top-actions">
-        <el-switch
-            v-model="isDark"
-            inline-prompt
-            active-text="🌙"
-            inactive-text="☀️"
-            class="theme-switch"
-        />
-        <span class="lang-switch">文/A</span>
-      </div>
-
-      <div class="login-box">
-        <h3 class="login-title">登录</h3>
-        <el-form
-            ref="loginFormRef"
-            :model="form"
-            :rules="rules"
-            class="login-form"
-        >
-          <el-form-item prop="username">
-            <el-input
-                v-model="form.username"
-                placeholder="请输入用户名"
-                size="large"
-            />
-          </el-form-item>
-
-          <el-form-item prop="password">
-            <el-input
-                v-model="form.password"
-                type="password"
-                placeholder="请输入密码"
-                show-password
-                size="large"
-            />
-          </el-form-item>
-
-          <div class="captcha-section">
-            <div class="captcha-label">安全验证</div>
-            <div class="captcha-slider-wrapper">
-              <el-slider
-                  v-model="sliderValue"
-                  :min="0"
-                  :max="100"
-                  :disabled="sliderSuccess"
-                  :show-tooltip="false"
-                  @change="handleSliderChange"
-              />
-              <span class="slider-hint" v-if="!sliderSuccess">请按住滑块拖动</span>
-              <span class="slider-hint success" v-else>验证通过</span>
-            </div>
-          </div>
-
-          <div class="form-options">
-            <el-checkbox v-model="form.remember">记住我</el-checkbox>
-            <el-link type="primary" :underline="false">忘记密码？</el-link>
-          </div>
-
-          <el-button
-              type="primary"
-              size="large"
-              class="submit-btn"
-              @click="handleLogin"
-              :disabled="!sliderSuccess"
-          >
-            登录
-          </el-button>
-        </el-form>
-      </div>
-
-      <div class="copyright">
-        Copyright © 2024 广河县中小微企业服务系统
-      </div>
-    </div>
+    </main>
+  </div>
+  <div class="copyright">
+    Copyright © 2026 广河县中小微企业服务中心
   </div>
 </template>
 
 <script setup>
-import {ref, onMounted, watch} from 'vue'
+import {ref, watch} from 'vue'
 import {useLoginLogic} from './login'
 
 const logoExists = ref(true)
 const illustrationExists = ref(true)
-const isDark = ref(false)
 
 const {
   form,
   sliderSuccess,
+  onSliderSuccess,
   rules,
   loginFormRef,
   handleLogin,
-  onSliderSuccess,
   loginFailedTick
 } = useLoginLogic()
 
@@ -140,252 +158,385 @@ const handleImgError = (type) => {
   if (type === 'logo') logoExists.value = false
   if (type === 'illustration') illustrationExists.value = false
 }
-
-onMounted(() => {
-  const container = document.querySelector('.login-container')
-  if (container) {
-    container.style.display = 'flex'
-  }
-})
 </script>
 
 <style scoped lang="scss">
 .login-container {
-  display: flex !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  overflow: hidden !important;
-  background-color: #ffffff !important;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  height: 100vh;
+  background: radial-gradient(circle at 10% 20%, #f0f4f8 0%, #e2ebf0 100%);
+  display: flex;
+  flex-direction: column;
+  color: #333;
 }
 
-// --- 左侧背景区 ---
-.login-left {
-  position: relative !important;
-  width: 50% !important;
-  height: 100% !important;
-  background: linear-gradient(135deg, #e0eaff 0%, #3a7bd5 100%) !important;
-  overflow: hidden;
+/* --- 导航栏 --- */
+.nav-header {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 10px 5%;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 
-  &::after {
-    content: "" !important;
-    position: absolute !important;
-    top: 0 !important;
-    right: -120px !important;
-    width: 240px !important;
-    height: 100% !important;
-    background: inherit !important;
-    border-radius: 50% !important;
-    z-index: 1 !important;
-    box-shadow: -20px 0 60px rgba(58, 123, 213, 0.2);
-  }
+  .logo-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 
-  .brand-info {
-    margin-top: 30px;
-    position: relative !important;
-    z-index: 10 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-    padding: 40px 80px !important;
-    color: white !important;
-    text-align: center; // 核心：左侧整体居中
-  }
-
-  .logo-wrapper {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center; // logo和标题居中
-    gap: 25px !important;
-
-    .logo-img {
-      width: 80px;
-      height: 80px;
+    img {
+      height: 32px;
     }
 
-    .brand-title {
-      font-size: 25px;
+    .nav-brand {
       font-weight: bold;
-      letter-spacing: 1px;
-    }
-  }
-
-  .illustration {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-
-    .illustration-img {
-      max-width: 45% !important;
-      border-radius: 12px;
-      // 新增：上下小幅循环动效
-      animation: floatUpDown 2s ease-in-out infinite;
-    }
-  }
-
-  .brand-text {
-    margin-bottom: 110px !important;
-
-    .main-title {
       font-size: 18px;
-      color: #ececec;
     }
-
   }
-}
 
-// --- 右侧登录区域 ---
-.login-right {
-  position: relative !important;
-  flex: 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: #ffffff !important;
-  z-index: 5 !important;
+  .nav-links {
+    display: flex;
+    gap: 30px;
 
-  .top-actions {
-    position: absolute !important;
-    top: 24px !important;
-    right: 24px !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 16px !important;
-
-    .lang-switch {
-      font-size: 14px;
-      cursor: pointer;
+    a {
+      text-decoration: none;
       color: #666;
-    }
-  }
-
-  .login-box {
-    width: 100% !important;
-    max-width: 360px !important;
-    padding: 20px !important;
-  }
-
-  .login-title {
-    font-size: 28px !important;
-    font-weight: bold !important;
-    color: #333 !important;
-    margin-bottom: 32px !important;
-  }
-}
-
-// --- 表单样式核心修复 ---
-.login-form {
-  // 强制去掉输入框背景色，包括自动填充引起的浅蓝色
-  :deep(.el-input__wrapper) {
-    background-color: transparent !important;
-    background-image: none !important;
-    box-shadow: 0 0 0 1px #dcdfe6 inset !important;
-    border-radius: 8px !important;
-    height: 48px !important;
-    transition: all 0.3s ease;
-
-    &:hover {
-      box-shadow: 0 0 0 1px #3a7bd5 inset !important;
-    }
-
-    &.is-focus {
-      box-shadow: 0 0 0 1px #3a7bd5 inset !important;
-    }
-  }
-
-  :deep(.el-input__inner) {
-    background-color: transparent !important;
-    // 关键：解决 Chrome 自动填充背景色问题
-    &:-webkit-autofill {
-      transition: background-color 5000s ease-in-out 0s !important;
-      -webkit-text-fill-color: #606266 !important;
-    }
-  }
-
-  .captcha-section {
-    margin: 24px 0 !important;
-
-    .captcha-label {
       font-size: 14px;
-      color: #606266;
-      margin-bottom: 8px;
-    }
 
-    .captcha-slider-wrapper {
-      position: relative !important;
-      padding: 4px 12px !important;
-      background: #f5f7fa !important;
-      border-radius: 8px !important;
-
-      .slider-hint {
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        font-size: 12px !important;
-        color: #909399 !important;
-        pointer-events: none !important;
-
-        &.success {
-          color: #67c23a;
-          font-weight: bold;
-        }
+      &:hover {
+        color: #ff6a00;
       }
     }
   }
 
-  .form-options {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    margin-bottom: 24px !important;
-  }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 
-  .submit-btn {
-    width: 100% !important;
-    height: 48px !important;
-    font-size: 16px !important;
-    background: #3a7bd5 !important;
-    border: none !important;
-    border-radius: 8px !important;
-    transition: all 0.3s ease;
-
-    &:hover {
-      opacity: 0.9;
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(58, 123, 213, 0.3);
+    .register-btn {
+      border-radius: 20px;
     }
   }
 }
 
-// 新增：上下浮动动画关键帧
-@keyframes floatUpDown {
-  0% {
-    transform: translateY(0px);
+/* --- 主体内容 --- */
+.login-content {
+  flex: 1;
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+  padding: 20px 20px;
+  width: 100%;
+}
+
+/* --- 左侧展示 --- */
+.content-left {
+  flex: 1;
+  padding-right: 50px;
+
+  h1 {
+    font-size: 35px;
+    line-height: 1.3;
+    margin-bottom: 15px;
+
+    .highlight {
+      color: #ff6a00;
+    }
   }
-  50% {
-    transform: translateY(-10px); // 向上浮动10px（幅度可调整）
+
+  .sub-desc {
+    color: #666;
+    line-height: 1.8;
+    max-width: 480px;
+    margin-bottom: 20px;
   }
-  100% {
-    transform: translateY(0px);
+
+  .hero-image-wrapper {
+    position: relative;
+    width: 420px;
+    height: 420px;
+    background: #fff;
+    border-radius: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+
+    .main-hero-img {
+      width: 70%;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .stat-badge {
+      position: absolute;
+      background: #fff;
+      padding: 10px 15px;
+      border-radius: 12px;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+      font-size: 12px;
+
+      span {
+        display: block;
+        font-weight: bold;
+        color: #ff6a00;
+        font-size: 16px;
+      }
+
+      &.top-left {
+        top: 40px;
+        left: -20px;
+      }
+
+      &.mid-right {
+        top: 50%;
+        right: -30px;
+      }
+
+      &.bottom-mid {
+        bottom: 20px;
+        right: 20px;
+      }
+    }
   }
+}
+
+/* --- 右侧登录卡片 --- */
+.content-right {
+  width: 420px;
+
+  .login-card {
+    background: #fff;
+    border-radius: 25px;
+    padding: 30px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+
+    .card-header {
+      text-align: center;
+      margin-bottom: 15px;
+
+      h2 {
+        font-size: 24px;
+        margin-bottom: 8px;
+      }
+
+      p {
+        color: #999;
+        font-size: 14px;
+      }
+    }
+  }
+}
+
+.tab-switch {
+  display: flex;
+  background: #f5f7fa;
+  border-radius: 8px;
+  padding: 4px;
+  margin-bottom: 25px;
+
+  .tab-item {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    color: #666;
+
+    &.active {
+      background: #fff;
+      color: #333;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+  }
+}
+
+.input-label {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+:deep(.el-input__wrapper) {
+  background-color: #f0f5ff !important;
+  box-shadow: none !important;
+  border-radius: 10px !important;
+}
+
+.captcha-row {
+  display: flex;
+  gap: 15px;
+  margin: 20px 0;
+
+  .captcha-input-wrap {
+    flex: 1;
+  }
+
+  .captcha-img-placeholder {
+    width: 100px;
+    background: #eee;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #666;
+  }
+}
+
+.form-options {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 25px;
+
+  .forget-pwd {
+    color: #ff6a00;
+    font-size: 13px;
+  }
+}
+
+.submit-btn {
+  width: 100%;
+  height: 50px;
+  background: #ff6a00 !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 16px;
+  font-weight: bold;
+  box-shadow: 0 8px 15px rgba(255, 106, 0, 0.2);
+}
+
+.third-party-login {
+  margin-top: 30px;
+  text-align: center;
+
+  .divider {
+    font-size: 12px;
+    color: #ccc;
+    position: relative;
+
+    &::before, &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 30%;
+      height: 1px;
+      background: #eee;
+    }
+
+    &::before {
+      left: 0;
+    }
+
+    &::after {
+      right: 0;
+    }
+  }
+
+  .icon-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 15px;
+
+    .social-icon {
+      width: 40px;
+      height: 40px;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      cursor: pointer;
+      background-size: 20px;
+      background-repeat: no-repeat;
+      background-position: center;
+
+      &:hover {
+        background-color: #f9f9f9;
+      }
+    }
+  }
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 25px;
+  font-size: 13px;
+  color: #999;
 }
 
 .copyright {
   position: absolute !important;
-  bottom: 24px !important;
+  bottom: 15px !important;
   color: #999 !important;
   font-size: 12px !important;
+  left:40%;
 }
 
-@media (max-width: 1024px) {
-  .login-left {
-    display: none !important;
+.captcha-section {
+  margin: 24px 0 !important;
+
+  .captcha-label {
+    font-size: 14px;
+    color: #606266;
+    margin-bottom: 8px;
   }
-  .login-right {
-    width: 100% !important;
+
+  .captcha-slider-wrapper {
+    position: relative !important;
+    padding: 4px 15px !important;
+    background: #f5f7fa !important;
+    border-radius: 6px !important;
+
+    .slider-hint {
+      position: absolute !important;
+      top: 130% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      font-size: 12px !important;
+      color: #909399 !important;
+      pointer-events: none !important;
+
+      &.success {
+        color: #67c23a !important;
+      }
+    }
+  }
+}
+
+:deep(.el-input__inner) {
+  background-color: transparent !important;
+  // 关键：解决 Chrome 自动填充背景色问题
+  &:-webkit-autofill {
+    transition: background-color 5000s ease-in-out 0s !important;
+    -webkit-text-fill-color: #606266 !important;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-15px);
+  }
+}
+
+@media (max-width: 992px) {
+  .content-left {
+    display: none;
+  }
+  .content-right {
+    margin: 0 auto;
+  }
+  .nav-links {
+    display: none;
   }
 }
 </style>
