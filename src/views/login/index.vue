@@ -205,7 +205,7 @@ const handleImgError = (type) => {
   height: 64px;
   display: flex;
   align-items: center;
-  padding: 10px 5%;
+  padding: 6px 5%;
   background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(15px);
   justify-content: space-between;
@@ -216,7 +216,7 @@ const handleImgError = (type) => {
   .logo-box {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
 
     img {
       height: 32px;
@@ -291,7 +291,7 @@ const handleImgError = (type) => {
     position: relative;
     width: 420px;
     height: 420px;
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.3);
     backdrop-filter: blur(10px);
     border-radius: 24px;
     display: flex;
@@ -343,9 +343,9 @@ const handleImgError = (type) => {
   width: 420px;
 
   .login-card {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.55);
     backdrop-filter: blur(15px);
-    border-radius: 25px;
+    border-radius: 20px;
     padding: 30px;
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
 
@@ -398,11 +398,37 @@ const handleImgError = (type) => {
   margin-bottom: 8px;
 }
 
-:deep(.el-input__wrapper) {
-  background-color: rgba(240, 245, 255, 0.8) !important;
-  box-shadow: none !important;
-  border-radius: 10px !important;
-  backdrop-filter: blur(5px);
+
+
+
+.login-form {
+  // 强制去掉输入框背景色，包括自动填充引起的浅蓝色
+  :deep(.el-input__wrapper) {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: 0 0 0 1px #dcdfe6 inset !important;
+    border-radius: 8px !important;
+    height: 48px !important;
+    transition: all 0.3s ease;
+
+    //&:hover {
+    //  box-shadow: 0 0 0 1px #6fc5ff inset !important;
+    //}
+
+    &.is-focus {
+      box-shadow: 0 0 0 1px #ff6a00 inset !important;
+    }
+  }
+
+  :deep(.el-input__inner) {
+    background-color: transparent !important;
+    // 关键：解决 Chrome 自动填充背景色问题
+    &:-webkit-autofill {
+      transition: background-color 5000s ease-in-out 0s !important;
+      -webkit-text-fill-color: #606266 !important;
+    }
+  }
+
 }
 
 .captcha-row {
@@ -507,7 +533,7 @@ const handleImgError = (type) => {
 }
 
 .copyright {
-  bottom: 25px !important;
+  bottom: 30px !important;
   color: #acacac !important;
   font-size: 12px !important;
   left:40%;
@@ -547,14 +573,7 @@ const handleImgError = (type) => {
   }
 }
 
-:deep(.el-input__inner) {
-  background-color: transparent !important;
-  // 关键：解决 Chrome 自动填充背景色问题
-  &:-webkit-autofill {
-    transition: background-color 5000s ease-in-out 0s !important;
-    -webkit-text-fill-color: #606266 !important;
-  }
-}
+
 
 @keyframes float {
   0%, 100% {
