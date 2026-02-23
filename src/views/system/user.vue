@@ -44,9 +44,8 @@
     <el-card class="list-card" shadow="never">
       <el-table style="width: 100%; font-size: 12px" :data="userList" border stripe v-loading="loading" fit >
         <el-table-column type="selection" width="50" align="center"/>
-        <el-table-column prop="id" label="ID" width="50" align="center"/>
-        <el-table-column prop="username" label="用户名" width="90" align="center"/>
-        <el-table-column prop="realName" label="姓名" width="80" align="center"/>
+        <el-table-column prop="username" label="用户名" width="110" align="center"/>
+        <el-table-column prop="realName" label="姓名" width="90" align="center"/>
         <el-table-column prop="phone" label="手机号" width="110" align="center"/>
         <el-table-column label="所属部门" width="120" align="center">
           <template #default="{ row }">
@@ -55,7 +54,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="角色名称" width="95" align="center">
+        <el-table-column label="角色名称" width="110" align="center">
           <template #default="{ row }">
             <el-tag type="success" v-if="row.roleName">{{ row.roleName }}</el-tag>
             <el-tag type="info" v-else>未分配</el-tag>

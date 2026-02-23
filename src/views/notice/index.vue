@@ -27,10 +27,10 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="发布人姓名">
+        <el-form-item label="发送人姓名">
           <el-input
               v-model="queryParams.publisherName"
-              placeholder="请输入发布人姓名"
+              placeholder="请输入发送人姓名"
               clearable
               style="width: 200px;"
               @keyup.enter="loadNoticeList"
@@ -79,7 +79,7 @@
             <div class="item-header">
               <div class="item-title" @click="goToDetail(item)">{{ item.title }}</div>
               <div class="item-tag-group">
-                <el-tag size="small" type="primary">已发布</el-tag>
+                <el-tag size="small" type="primary">已发送</el-tag>
                 <el-tag size="small" type="danger">{{ formatNoticeType(item.noticeType) }}</el-tag>
                 <el-tag size="small" type="success">{{ item.publisherName }}</el-tag>
               </div>
@@ -155,11 +155,11 @@
 <!--            <el-radio label="1">是</el-radio>-->
 <!--          </el-radio-group>-->
 <!--        </el-form-item>-->
-        <el-form-item label="发布时间" prop="publishTime">
+        <el-form-item label="发送时间" prop="publishTime">
           <el-date-picker
               v-model="formData.publishTime"
               type="datetime"
-              placeholder="请选择发布时间"
+              placeholder="请选择发送时间"
               format="YYYY-MM-DD HH:mm:ss"
               value-format="YYYY-MM-DD HH:mm:ss"
               style="width: 100%"
@@ -281,7 +281,7 @@ export default {
       formRules: {
         title: [{required: true, message: '请输入通知标题', trigger: 'blur'}],
         noticeType: [{required: true, message: '请选择通知类型', trigger: 'change'}],
-        publishTime: [{required: true, message: '请选择发布时间', trigger: 'change'}],
+        publishTime: [{required: true, message: '请选择发送时间', trigger: 'change'}],
         targetType: [{required: true, message: '请选择接收范围', trigger: 'change'}],
         targetUserIds: [
           {

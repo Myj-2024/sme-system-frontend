@@ -256,8 +256,8 @@
           </el-col>
           <el-col :span="12">
             <!-- 新增：是否为路由节点 -->
-            <el-form-item label="是否为路由节点" prop="isRoute">
-              <el-select v-model="formData.isRoute" placeholder="请选择是否为路由节点" style="width: 100%">
+            <el-form-item label="是否路由节点" prop="isRoute" >
+              <el-select v-model="formData.isRoute" placeholder="请选择是否为路由节点" maxlength="50" show-word-limit>
                 <el-option label="是" :value="1"/>
                 <el-option label="否" :value="0"/>
               </el-select>

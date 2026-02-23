@@ -1,7 +1,7 @@
 <template>
   <div class="admin-layout">
     <!-- 左侧菜单 -->
-    <el-aside :width="isCollapse ? '64px' : '240px'" class="layout-aside">
+    <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
       <div class="layout-logo" :class="{ collapsed: isCollapse }">
         <img src="/logo.png" class="logo-img"/>
         <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
@@ -13,6 +13,8 @@
           :collapse="isCollapse"
           :collapse-transition="false"
           class="layout-menu"
+          :unique-opened="true"
+          @select="handleMenuSelect"
       >
         <!-- 首页 -->
         <el-menu-item index="/dashboard">
@@ -22,7 +24,7 @@
           <span>首页</span>
         </el-menu-item>
 
-        <!-- 🔥 动态菜单（自动过滤隐藏） -->
+        <!-- 动态菜单（自动过滤隐藏） -->
         <template v-for="menu in filteredMenus" :key="menu.id">
 
           <!-- 有子菜单 -->
@@ -115,7 +117,27 @@
         </div>
 
         <div class="header-right"
-             style="width: 260px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
+             style="width: 380px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
+          <!-- 需求1：添加全局搜索框 -->
+          <div class="global-search-wrapper">
+            <el-autocomplete
+                v-model="searchKeyword"
+                placeholder="搜索..."
+                clearable
+                size="small"
+                class="global-search-input"
+                :fetch-suggestions="querySearch"
+                @select="handleSearchSelect"
+                @keyup.enter="handleGlobalSearch"
+            >
+              <template #prefix>
+                <el-icon>
+                  <Search/>
+                </el-icon>
+              </template>
+
+            </el-autocomplete>
+          </div>
 
           <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notice-badge">
             <el-icon class="notice-icon" @click="goMyNotice">
@@ -124,11 +146,15 @@
           </el-badge>
 
           <el-dropdown>
+            <!-- 需求4：添加用户部门显示 -->
             <span class="user-info">
-              <el-avatar size="32"
+              <el-avatar size="30"
                          :src="userStore.userInfo.avatar && userStore.userInfo.avatar.startsWith('http') ? userStore.userInfo.avatar : '/avatar.png'"
                          class="header-avatar"/>
-              <span>{{ userName }}</span>
+              <div class="user-info-content">
+                <span>{{ userName }}</span>
+                <span class="user-dept">{{ userStore.userInfo.deptName || '未知部门' }}</span>
+              </div>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -216,12 +242,12 @@ import request from '@/utils/request'
 import {
   HomeFilled, User, UserFilled, Setting, Menu,
   Expand, OfficeBuilding, Files, Fold, Document, Bell,
-  List, Edit, Message, Picture, Plus
+  List, Edit, Message, Picture, Plus, Search
 } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import userApi from '@/api/user'
 import {uploadApi} from '@/api/uploadApi'
-import { on, emit, off } from '@/utils/eventBus' // 引入事件总线
+import {on, emit, off} from '@/utils/eventBus' // 引入事件总线
 
 const route = useRoute()
 const router = useRouter()
@@ -232,8 +258,98 @@ const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
+// 需求1：前端全局搜索相关
+const searchKeyword = ref('')
+// 扁平化所有可访问的菜单列表（用于前端搜索）
+const flattenMenus = computed(() => {
+  const result = []
+
+  // 递归扁平化菜单
+  const flatten = (menus) => {
+    menus.forEach(menu => {
+      // 只处理显示的菜单
+      if (menu.type === 1 && menu.is_hidden !== 1) {
+        // 添加当前菜单（一级菜单）
+        if (menu.path && menu.name) {
+          result.push({
+            value: menu.name,
+            path: menu.path,
+            label: menu.name
+          })
+        }
+
+        // 递归处理子菜单
+        if (menu.children && menu.children.length > 0) {
+          flatten(menu.children.filter(c => c.is_hidden !== 1))
+        }
+      }
+    })
+  }
+
+  // 处理首页
+  result.push({
+    value: '首页',
+    path: '/dashboard',
+    label: '首页'
+  })
+
+  // 处理动态菜单
+  flatten(userStore.menus || [])
+
+  return result
+})
+
+// 搜索建议查询方法
+const querySearch = (queryString, callback) => {
+  if (!queryString) {
+    callback([])
+    return
+  }
+
+  // 前端过滤匹配的菜单
+  const results = flattenMenus.value.filter(item => {
+    return item.value.toLowerCase().includes(queryString.toLowerCase())
+  })
+
+  callback(results)
+}
+
+// 选择搜索结果后的处理
+const handleSearchSelect = (item) => {
+  if (item.path) {
+    router.push(item.path).then(() => {
+      searchKeyword.value = '' // 清空搜索框
+    }).catch(err => {
+      console.warn('路由跳转失败:', err)
+      ElMessage.error('无法跳转到该页面')
+    })
+  }
+}
+
+// 手动点击搜索按钮的处理
+const handleGlobalSearch = () => {
+  if (!searchKeyword.value.trim()) {
+    return ElMessage.warning('请输入搜索关键词')
+  }
+
+  // 查找匹配的菜单
+  const matchedItems = flattenMenus.value.filter(item => {
+    return item.value.toLowerCase().includes(searchKeyword.value.toLowerCase())
+  })
+
+  if (matchedItems.length === 0) {
+    ElMessage.info(`未找到与"${searchKeyword.value}"相关的页面`)
+  } else if (matchedItems.length === 1) {
+    // 只有一个匹配项，直接跳转
+    handleSearchSelect(matchedItems[0])
+  } else {
+    // 多个匹配项，提示选择
+    ElMessage.info(`找到${matchedItems.length}个相关页面，请从下拉列表中选择`)
+  }
+}
+
 /**
- * 🔥 自动递归过滤隐藏菜单 + 详情页(type !== 1)
+ * 自动递归过滤隐藏菜单 + 详情页(type !== 1)
  */
 const filteredMenus = computed(() => {
 
@@ -263,11 +379,49 @@ const filteredMenus = computed(() => {
 })
 
 /**
- * 🔥 自动高亮支持详情页
+ * 自动高亮支持详情页
  */
 const activeMenuPath = computed(() => {
   return route.meta.activeMenu || route.path
 })
+
+/**
+ * 需求2：处理菜单选择事件 - 点击一级菜单跳转到第一个二级菜单
+ * 修复：移除 async/await，改为同步执行
+ */
+/**
+ * 需求2：处理菜单选择事件 - 点击一级菜单跳转到第一个二级菜单
+ * 修复：移除 async/await，改为同步执行
+ */
+const handleMenuSelect = (index) => {
+  // 查找点击的菜单
+  const findMenu = (menus, path) => {
+    for (const menu of menus) {
+      if (menu.path === path) return menu
+      if (menu.children) {
+        const found = findMenu(menu.children, path)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  const clickedMenu = findMenu(userStore.menus, index)
+
+  // 如果是有子菜单的一级菜单，跳转到第一个二级菜单
+  if (clickedMenu?.children && clickedMenu.children.length > 0) {
+    // 过滤隐藏的二级菜单
+    const visibleChildren = clickedMenu.children.filter(c => c.is_hidden !== 1 && c.type === 1)
+    if (visibleChildren.length > 0) {
+      // 确保路由跳转生效（添加立即执行 + 错误捕获）
+      router.push(visibleChildren[0].path).catch(err => {
+        console.warn('路由跳转被拦截:', err)
+        // 兜底：如果路由跳转失败，手动修改地址栏
+        window.location.hash = visibleChildren[0].path
+      })
+    }
+  }
+}
 
 /**
  * 图标映射
@@ -349,11 +503,12 @@ const getUnreadCount = async () => {
   }
 }
 
-// 🔥 新增：监听「刷新未读通知」事件
+// 新增：监听「刷新未读通知」事件
 on('refreshUnreadNotice', getUnreadCount)
 
-// 🔥 新增：页面卸载时移除监听（避免内存泄漏）
-import { onUnmounted } from 'vue'
+// 新增：页面卸载时移除监听（避免内存泄漏）
+import {onUnmounted} from 'vue'
+
 onUnmounted(() => {
   off('refreshUnreadNotice', getUnreadCount)
 })
@@ -364,7 +519,7 @@ defineExpose({
 })
 
 /**
- * 🔥 核心修改：复用左侧菜单的路由跳转逻辑（适配动态路由）
+ * 核心修改：复用左侧菜单的路由跳转逻辑
  */
 const goMyNotice = async () => {
   try {
@@ -548,8 +703,15 @@ const submitProfile = async () => {
 }
 
 .logo-img {
-  width: 36px;
+  width: 28px;
+  height: 28px;
   margin-right: 8px;
+  margin-left: 5px;
+}
+
+.logo-text {
+  font-size: 15px;
+  font-weight: 500;
 }
 
 .layout-main {
@@ -582,6 +744,17 @@ const submitProfile = async () => {
   flex-shrink: 0;
 }
 
+/* 需求1：全局搜索框样式 */
+.global-search-wrapper {
+  margin-right: 10px;
+  width: 120px;
+}
+
+.global-search-input {
+  --el-input-height: 55px !important;
+  width: 100%;
+}
+
 .breadcrumb-wrapper {
   flex: 1;
 }
@@ -590,33 +763,51 @@ const submitProfile = async () => {
   background: #f5f7fa;
   flex: 1;
   overflow: auto;
-  padding: 20px;
+  padding: 10px;
 }
 
+/* 需求4：用户信息样式调整 */
 .user-info {
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 10px;
+  font-size: 12px;
+}
+
+.user-info-content {
+  width: 75px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  line-height: 1.2;
+  padding: 0 10px;
+}
+
+.user-dept {
+  font-size: 11px;
+  color: #909399;
 }
 
 .notice-icon {
   font-size: 20px;
   cursor: pointer;
+  margin-right: 4px;
 }
 
 .notice-badge {
   cursor: pointer;
+  margin-right: 4px;
 }
 
-/* 🔥 核心：统一图标容器样式，确保图片和组件图标视觉一致 */
+/* 统一图标容器样式，确保图片和组件图标视觉一致 */
 .menu-icon-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 24px;
-  height: 24px;
+  width: 18px;
+  height: 18px;
 }
 
 /* 图片图标样式 */
@@ -676,5 +867,10 @@ const submitProfile = async () => {
 :deep(.el-menu-item.is-active .menu-icon-component),
 :deep(.el-sub-menu__title.is-active .menu-icon-component) {
   color: #409eff !important;
+}
+
+/* 搜索下拉建议框样式 */
+:deep(.el-autocomplete-suggestion-list) {
+  max-height: 200px;
 }
 </style>
