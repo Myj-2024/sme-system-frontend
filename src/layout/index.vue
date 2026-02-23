@@ -142,7 +142,8 @@
           <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
             <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
               <el-form-item label="新密码" prop="password">
-                <el-input v-model="pwdForm.password" type="password" autocomplete="new-password" placeholder="请输入新密码"/>
+                <el-input v-model="pwdForm.password" type="password" autocomplete="new-password"
+                          placeholder="请输入新密码"/>
               </el-form-item>
               <el-form-item label="确认密码" prop="confirm">
                 <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password"
@@ -159,7 +160,8 @@
           <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
             <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
               <el-form-item label="头像">
-                <el-upload class="avatar-uploader" action="#" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                <el-upload class="avatar-uploader" action="#" :show-file-list="false"
+                           :before-upload="beforeAvatarUpload"
                            :http-request="uploadAvatar">
                   <el-avatar size="100"
                              :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
@@ -219,6 +221,7 @@ import {
 import {ElMessage, ElMessageBox} from 'element-plus'
 import userApi from '@/api/user'
 import {uploadApi} from '@/api/uploadApi'
+import { on, emit, off } from '@/utils/eventBus' // 引入事件总线
 
 const route = useRoute()
 const router = useRouter()
@@ -341,10 +344,65 @@ const getUnreadCount = async () => {
   try {
     const res = await request.get('/admin/noticeUser/unreadCount')
     unreadCount.value = res.data || 0
-  } catch (e) {}
+  } catch (e) {
+    console.error('获取未读通知数失败:', e)
+  }
 }
 
-const goMyNotice = () => router.push('/notice/my')
+// 🔥 新增：监听「刷新未读通知」事件
+on('refreshUnreadNotice', getUnreadCount)
+
+// 🔥 新增：页面卸载时移除监听（避免内存泄漏）
+import { onUnmounted } from 'vue'
+onUnmounted(() => {
+  off('refreshUnreadNotice', getUnreadCount)
+})
+
+// 原有代码：暴露方法（可以保留，不影响）
+defineExpose({
+  getUnreadCount
+})
+
+/**
+ * 🔥 核心修改：复用左侧菜单的路由跳转逻辑（适配动态路由）
+ */
+const goMyNotice = async () => {
+  try {
+    // 1. 递归查找"我的通知"菜单（适配动态菜单结构）
+    const findMyNoticeMenu = (menus) => {
+      for (const menu of menus) {
+        // 匹配路径或菜单名称（双重保障，适配不同配置）
+        if ((menu.path && (menu.path === '/notice/my' || menu.path === 'notice/my')) ||
+            (menu.name && menu.name === '我的通知')) {
+          return menu
+        }
+        // 递归查找子菜单
+        if (menu.children && menu.children.length > 0) {
+          const found = findMyNoticeMenu(menu.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    // 2. 获取我的通知菜单
+    const myNoticeMenu = findMyNoticeMenu(userStore.menus)
+    if (!myNoticeMenu) {
+      ElMessage.error('未找到“我的通知”菜单，请检查菜单权限配置！')
+      return
+    }
+
+    // 3. 复用菜单的路由跳转逻辑（和左侧菜单点击完全一致）
+    await router.push(myNoticeMenu.path)
+
+    // 4. 跳转成功后刷新未读数量
+    await getUnreadCount()
+  } catch (error) {
+    // 捕获所有跳转异常并提示
+    ElMessage.error(`跳转到通知页面失败：${error.message || '请检查菜单路由配置'}`)
+    console.error('通知页面跳转失败：', error)
+  }
+}
 
 onMounted(() => {
   getUnreadCount()

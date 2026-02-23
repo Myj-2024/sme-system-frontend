@@ -100,3 +100,15 @@ export function getMyNoticeList(params) {
         params
     })
 }
+
+/**
+ * 9. 获取当前登录用户发送给别人的通知列表（我发送的通知）
+ * @param params { pageNum, pageSize, title }
+ */
+export function getMySentNoticeList(params) {
+    return request({
+        url: '/admin/notice/sent',
+        method: 'get',
+        params
+    })
+}

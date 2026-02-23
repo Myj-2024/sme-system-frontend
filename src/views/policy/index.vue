@@ -56,7 +56,10 @@
           <el-button type="primary" icon="Search" @click="getList">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Plus" @click="handleAdd">新增政策</el-button>
-          <el-button type="success" icon="View" @click="handleBatchShowHidden">一键显示已隐藏政策</el-button>
+          <!-- 按钮文本中加入隐藏政策数量 -->
+          <el-button type="success" icon="View" @click="handleBatchShowHidden">
+            恢复已隐藏的 {{ hiddenPolicyCount }} 条政策
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -75,7 +78,7 @@
                   :key="idx"
                   class="item-image"
               >
-                <img :src="img" alt="政策配图" />
+                <img :src="img" alt="政策配图"/>
               </div>
               <!-- 无图片时占位 -->
               <div v-if="!getContentImages(item.content).length" class="item-image placeholder">
@@ -88,13 +91,13 @@
               <div class="item-title">{{ item.title }}</div>
               <div class="item-tag-group">
                 <el-tag size="small" type="primary">已发布</el-tag>
-                <el-tag size="small" type="danger">{{ item.policyTypeName}}</el-tag>
+                <el-tag size="small" type="danger">{{ item.policyTypeName }}</el-tag>
                 <el-tag size="small" type="success">{{ item.publisherName }}</el-tag>
               </div>
             </div>
             <div class="item-content" v-html="getContentPreview(item.content)"></div>
             <div class="item-meta">
-              <span class="meta-item">👤 {{ item.publisherName}}</span>
+              <span class="meta-item">👤 {{ item.publisherName }}</span>
               <span class="meta-item">🕒 {{ item.publishTime ? formatDate(item.publishTime) : '-' }}</span>
             </div>
             <div class="bottem">
@@ -218,6 +221,9 @@ const open = ref(false);
 const dialogTitle = ref('');
 const policyFormRef = ref(null);
 const policyTypeOptions = ref([]);
+
+// 新增：隐藏政策数量
+const hiddenPolicyCount = ref(0);
 
 // 查询参数
 const queryParams = ref({
@@ -358,6 +364,17 @@ const getList = async () => {
   }
 };
 
+// 新增：获取隐藏政策数量
+const getHiddenPolicyCount = async () => {
+  try {
+    const ids = await getHiddenPolicyIds().then(res => res.data || []);
+    hiddenPolicyCount.value = ids.length;
+  } catch (e) {
+    console.error('获取隐藏政策数量失败:', e);
+    hiddenPolicyCount.value = 0;
+  }
+};
+
 // 重置查询
 const resetQuery = () => {
   queryParams.value = {
@@ -412,21 +429,17 @@ const handleUpdate = (row) => {
   });
 };
 
-// 置顶状态切换
+// 置顶状态切换 - 新增实时刷新列表和隐藏数量逻辑
 const handleTopChange = async (row) => {
   const oldTopStatus = row.isTop;
   try {
     const res = await changePolicyTopStatus(row.id, row.isTop);
     if (res.code === 200) {
       ElMessage.success('置顶状态修改成功');
-      const targetIndex = policyList.value.findIndex(item => item.id === row.id);
-      if (targetIndex !== -1) {
-        policyList.value[targetIndex] = {
-          ...policyList.value[targetIndex],
-          isTop: row.isTop,
-          updateTime: new Date().toISOString()
-        };
-      }
+      // 实时刷新列表
+      await getList();
+      // 同时刷新隐藏政策数量
+      await getHiddenPolicyCount();
     } else {
       row.isTop = oldTopStatus;
       ElMessage.error(res.message || '置顶状态修改失败');
@@ -438,22 +451,17 @@ const handleTopChange = async (row) => {
   }
 };
 
-// 显示状态切换
+// 显示状态切换 - 新增实时刷新列表和隐藏数量逻辑
 const handleShowChange = async (row) => {
   const oldShowStatus = row.isShow;
   try {
     const res = await changePolicyShowStatus(row.id, row.isShow);
     if (res.code === 200) {
       ElMessage.success('显示状态修改成功');
-      const targetIndex = policyList.value.findIndex(item => item.id === row.id);
-      if (targetIndex !== -1) {
-        policyList.value[targetIndex] = {
-          ...policyList.value[targetIndex],
-          isShow: row.isShow,
-          delFlag: row.isShow === 0 ? 1 : 0,
-          updateTime: new Date().toISOString()
-        };
-      }
+      // 实时刷新列表
+      await getList();
+      // 同时刷新隐藏政策数量
+      await getHiddenPolicyCount();
     } else {
       row.isShow = oldShowStatus;
       ElMessage.error(res.message || '显示状态修改失败');
@@ -465,34 +473,38 @@ const handleShowChange = async (row) => {
   }
 };
 
-// 删除
+// 删除 - 新增实时刷新隐藏数量逻辑
 const handleDelete = (row) => {
   ElMessageBox.confirm(`确定删除政策【${row.title}】吗？`, '警告', {type: 'warning'}).then(async () => {
     const res = await deletePolicy(row.id);
     if (res.code === 200) {
       ElMessage.success('删除成功');
       getList();
+      // 同时刷新隐藏政策数量
+      await getHiddenPolicyCount();
     }
   });
 };
 
-// 批量恢复隐藏
+// 批量恢复隐藏 - 带统计数量并实时刷新
 const handleBatchShowHidden = async () => {
   try {
     const ids = await getHiddenPolicyIds().then(res => res.data || []);
     if (ids.length === 0) return ElMessage.info('暂无隐藏政策');
-    await ElMessageBox.confirm(`确定恢复 ${ids.length} 条政策吗？`, '提示');
+    await ElMessageBox.confirm(`确定恢复 **${ids.length}** 条已隐藏政策吗？`, '提示');
     const res = await batchShowPolicies(ids);
     if (res.code === 200) {
-      ElMessage.success('恢复成功');
+      ElMessage.success(`已成功恢复 ${ids.length} 条政策`);
       getList();
+      // 同时刷新隐藏政策数量
+      await getHiddenPolicyCount();
     }
   } catch (e) {
     if (e !== 'cancel') ElMessage.error('操作失败');
   }
 };
 
-// 提交表单
+// 提交表单 - 新增实时刷新隐藏数量逻辑
 const submitForm = async () => {
   if (!policyFormRef.value) return;
   await policyFormRef.value.validate(async (valid) => {
@@ -502,6 +514,8 @@ const submitForm = async () => {
         ElMessage.success('保存成功');
         open.value = false;
         getList();
+        // 同时刷新隐藏政策数量
+        await getHiddenPolicyCount();
       } else {
         ElMessage.error(res.message);
       }
@@ -524,6 +538,8 @@ const getPolicyTypeList = async () => {
 onMounted(() => {
   getPolicyTypeList();
   getList();
+  // 页面初始化时获取隐藏政策数量
+  getHiddenPolicyCount();
 });
 </script>
 
@@ -558,7 +574,7 @@ onMounted(() => {
 /* 左侧图片区域 - 修复图片显示不完整问题 */
 .item-left {
   flex-shrink: 0;
-  width: 90px;
+  width: 92px;
   margin-right: 10px;
   margin-left: 5px;
 }
@@ -566,23 +582,25 @@ onMounted(() => {
 .item-images {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 8px;
   height: 140px;
   overflow: hidden;
 }
 
 .item-image {
-  width: 90px;  /* 固定宽度，避免变形 */
+  width: 90px; /* 固定宽度，避免变形 */
   height: 90px; /* 固定高度，避免变形 */
   background-color: #f8f9fa;
   overflow: hidden;
+  border: #bababa 1px solid;
+  border-radius: 4px;
 }
 
 .item-image img {
   width: 100%;
   height: 100%;
   object-fit: cover; /* 覆盖模式，保证图片完整显示 */
-  display: block;     /* 去除图片默认间隙 */
+  display: block; /* 去除图片默认间隙 */
 }
 
 /* 无图片占位 */
@@ -645,7 +663,7 @@ onMounted(() => {
   gap: 4px;
 }
 
-.bottem{
+.bottem {
   border-top: rgba(209, 209, 209, 0.57) 1px solid;
 }
 
@@ -714,6 +732,4 @@ onMounted(() => {
   font-size: 12px;
   padding: 4px 8px;
 }
-
-
 </style>
