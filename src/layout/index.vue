@@ -1,99 +1,82 @@
 <template>
-  <div class="admin-layout">
-    <!-- 左侧菜单 -->
+  <div class="admin-layout" :class="{ 'is-fullscreen': isFullscreen }">
     <el-aside :width="isCollapse ? '64px' : '220px'" class="layout-aside">
-      <div class="layout-logo" :class="{ collapsed: isCollapse }">
-        <img src="/logo.png" class="logo-img"/>
-        <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
-      </div>
+      <div class="aside-container">
+        <div class="layout-logo" :class="{ collapsed: isCollapse }">
+          <img src="/logo.png" class="logo-img"/>
+          <span class="logo-text" v-show="!isCollapse">中小微企业服务系统</span>
+        </div>
 
-      <el-menu
-          router
-          :default-active="activeMenuPath"
-          :collapse="isCollapse"
-          :collapse-transition="false"
-          class="layout-menu"
-          :unique-opened="true"
-          @select="handleMenuSelect"
-      >
-        <!-- 首页 -->
-        <el-menu-item index="/dashboard">
-          <el-icon>
-            <HomeFilled class="menu-icon-component"/>
-          </el-icon>
-          <span>首页</span>
-        </el-menu-item>
-
-        <!-- 动态菜单（自动过滤隐藏） -->
-        <template v-for="menu in filteredMenus" :key="menu.id">
-
-          <!-- 有子菜单 -->
-          <el-sub-menu
-              v-if="menu.children && menu.children.length > 0"
-              :index="menu.path"
-          >
-            <template #title>
-              <el-icon class="menu-icon-wrapper">
-                <img
-                    v-if="menu.iconUrl && menu.iconUrl.trim()"
-                    :src="menu.iconUrl"
-                    class="menu-icon-img"
-                />
-                <component
-                    v-else
-                    :is="getIconComponent(menu)"
-                    class="menu-icon-component"
-                />
-              </el-icon>
-              <span>{{ menu.name }}</span>
-            </template>
-
-            <el-menu-item
-                v-for="child in menu.children.filter(c => c.is_hidden !== 1)"
-                :key="child.id"
-                :index="child.path"
-            >
-              <el-icon class="menu-icon-wrapper">
-                <img
-                    v-if="child.iconUrl && child.iconUrl.trim()"
-                    :src="child.iconUrl"
-                    class="menu-icon-img"
-                />
-                <component
-                    v-else
-                    :is="getIconComponent(child)"
-                    class="menu-icon-component"
-                />
-              </el-icon>
-              <span>{{ child.name }}</span>
-            </el-menu-item>
-          </el-sub-menu>
-
-          <!-- 无子菜单 -->
-          <el-menu-item
-              v-else
-              :index="menu.path"
-          >
+        <el-menu
+            router
+            :default-active="activeMenuPath"
+            :collapse="isCollapse"
+            :collapse-transition="false"
+            class="layout-menu"
+            :unique-opened="true"
+            @select="handleMenuSelect"
+        >
+          <el-menu-item index="/dashboard">
             <el-icon class="menu-icon-wrapper">
-              <img
-                  v-if="menu.iconUrl && menu.iconUrl.trim()"
-                  :src="menu.iconUrl"
-                  class="menu-icon-img"
-              />
-              <component
-                  v-else
-                  :is="getIconComponent(menu)"
-                  class="menu-icon-component"
-              />
+              <HomeFilled class="menu-icon-component"/>
             </el-icon>
-            <span>{{ menu.name }}</span>
+            <span>首页</span>
           </el-menu-item>
 
-        </template>
-      </el-menu>
+          <template v-for="menu in filteredMenus" :key="menu.id">
+            <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
+              <template #title>
+                <el-icon class="menu-icon-wrapper">
+                  <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
+                  <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
+                </el-icon>
+                <span v-show="!isCollapse" @click.stop="handleParentClick(menu)">{{ menu.name }}</span>
+              </template>
+
+              <el-menu-item v-for="child in menu.children.filter(c => c.is_hidden !== 1)" :key="child.id"
+                            :index="child.path">
+                <el-icon class="menu-icon-wrapper">
+                  <img v-if="child.iconUrl && child.iconUrl.trim()" :src="child.iconUrl" class="menu-icon-img"/>
+                  <component v-else :is="getIconComponent(child)" class="menu-icon-component"/>
+                </el-icon>
+                <span>{{ child.name }}</span>
+              </el-menu-item>
+            </el-sub-menu>
+
+            <el-menu-item v-else :index="menu.path">
+              <el-icon class="menu-icon-wrapper">
+                <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
+                <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
+              </el-icon>
+              <span>{{ menu.name }}</span>
+            </el-menu-item>
+          </template>
+        </el-menu>
+
+        <div class="aside-footer" v-show="!isCollapse">
+          <div class="user-card">
+            <div class="user-card-main">
+              <el-avatar
+                  :size="40"
+                  :src="userStore.userInfo.avatar && userStore.userInfo.avatar.startsWith('http') ? userStore.userInfo.avatar : '/avatar.png'"
+                  class="aside-avatar"
+              />
+              <div class="user-card-info">
+                <div class="user-card-name">{{ userName }}</div>
+                <div class="user-card-dept">{{ userStore.userInfo.deptName || '未知部门' }}</div>
+              </div>
+            </div>
+            <div class="logout-btn-wrapper" @click="logout">
+              <el-icon>
+                <SwitchButton/>
+              </el-icon>
+              <span>退出登录</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </el-aside>
 
-    <!-- 主体 -->
     <el-container class="layout-main">
       <el-header class="layout-header">
         <div class="header-left">
@@ -105,125 +88,50 @@
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
               <el-breadcrumb-item to="/dashboard">首页</el-breadcrumb-item>
-              <el-breadcrumb-item
-                  v-for="(item, index) in breadcrumbList"
-                  :key="index"
-                  :to="item.path"
-              >
+              <el-breadcrumb-item v-for="(item, index) in breadcrumbList" :key="index" :to="item.path">
                 {{ item.title }}
               </el-breadcrumb-item>
             </el-breadcrumb>
           </div>
         </div>
 
-        <div class="header-right"
-             style="width: 380px; display: flex; align-items: center; justify-content: flex-end; gap: 20px">
-          <!-- 需求1：添加全局搜索框 -->
-          <div class="global-search-wrapper">
-            <el-autocomplete
-                v-model="searchKeyword"
-                placeholder="搜索..."
-                clearable
-                size="small"
-                class="global-search-input"
-                :fetch-suggestions="querySearch"
-                @select="handleSearchSelect"
-                @keyup.enter="handleGlobalSearch"
-            >
-              <template #prefix>
-                <el-icon>
-                  <Search/>
-                </el-icon>
-              </template>
+        <div class="header-center">
+          <div class="scroll-wrapper">
+            <div class="scroll-content">
+              Hello {{ userName }}，欢迎回来！今天是 {{ currentDate }}，愿你诸事顺利，万事顺心。
+            </div>
+          </div>
+        </div>
 
-            </el-autocomplete>
+        <div class="header-right">
+          <div class="action-item" @click="goMyNotice">
+            <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
+              <el-icon class="action-icon">
+                <Message />
+              </el-icon>
+            </el-badge>
           </div>
 
-          <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notice-badge">
-            <el-icon class="notice-icon" @click="goMyNotice">
-              <Bell/>
-            </el-icon>
-          </el-badge>
+          <div class="action-item" @click="toggleFullScreen">
+            <el-tooltip :content="isFullscreen ? '退出全屏' : '全屏预览'" placement="bottom">
+              <el-icon class="action-icon">
+                <FullScreen v-if="!isFullscreen"/>
+                <Aim v-else/>
+              </el-icon>
+            </el-tooltip>
+          </div>
 
-          <el-dropdown>
-            <!-- 需求4：添加用户部门显示 -->
-            <span class="user-info">
-              <el-avatar size="30"
-                         :src="userStore.userInfo.avatar && userStore.userInfo.avatar.startsWith('http') ? userStore.userInfo.avatar : '/avatar.png'"
-                         class="header-avatar"/>
-              <div class="user-info-content">
-                <span>{{ userName }}</span>
-                <span class="user-dept">{{ userStore.userInfo.deptName || '未知部门' }}</span>
-              </div>
-            </span>
+          <el-dropdown trigger="click" class="action-item">
+            <el-icon class="action-icon">
+              <Setting/>
+            </el-icon>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="openPwdDialog">修改密码</el-dropdown-item>
                 <el-dropdown-item @click="openProfileDialog">个人资料</el-dropdown-item>
-                <el-dropdown-item @click="logout">退出登录</el-dropdown-item>
+                <el-dropdown-item @click="openPwdDialog">修改密码</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          <!-- 修改密码弹窗 -->
-          <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
-            <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
-              <el-form-item label="新密码" prop="password">
-                <el-input v-model="pwdForm.password" type="password" autocomplete="new-password"
-                          placeholder="请输入新密码"/>
-              </el-form-item>
-              <el-form-item label="确认密码" prop="confirm">
-                <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password"
-                          placeholder="请再次输入新密码"/>
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <el-button @click="pwdDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitPwd">确定</el-button>
-            </template>
-          </el-dialog>
-
-          <!-- 个人资料弹窗 -->
-          <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
-            <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
-              <el-form-item label="头像">
-                <el-upload class="avatar-uploader" action="#" :show-file-list="false"
-                           :before-upload="beforeAvatarUpload"
-                           :http-request="uploadAvatar">
-                  <el-avatar size="100"
-                             :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
-                             class="avatar-img">
-                    <el-icon class="avatar-uploader-icon">
-                      <Plus/>
-                    </el-icon>
-                  </el-avatar>
-                </el-upload>
-              </el-form-item>
-              <el-form-item label="用户账号">
-                <el-input v-model="profileForm.username" disabled/>
-              </el-form-item>
-              <el-form-item label="所属部门">
-                <el-input v-model="profileForm.deptName" disabled/>
-              </el-form-item>
-              <el-form-item label="角色名称">
-                <el-input v-model="profileForm.roleName" disabled/>
-              </el-form-item>
-              <el-form-item label="账号状态">
-                <el-input v-model="profileForm.statusText" disabled/>
-              </el-form-item>
-              <el-form-item label="真实姓名" prop="realName">
-                <el-input v-model="profileForm.realName" placeholder="请输入真实姓名"/>
-              </el-form-item>
-              <el-form-item label="手机号" prop="phone">
-                <el-input v-model="profileForm.phone" placeholder="请输入手机号"/>
-              </el-form-item>
-            </el-form>
-            <template #footer>
-              <el-button @click="profileDialogVisible = false">取消</el-button>
-              <el-button type="primary" @click="submitProfile">保存修改</el-button>
-            </template>
-          </el-dialog>
-
-
         </div>
       </el-header>
 
@@ -231,23 +139,78 @@
         <router-view/>
       </el-main>
     </el-container>
+
+    <el-dialog v-model="pwdDialogVisible" title="修改密码" width="420px">
+      <el-form :model="pwdForm" ref="pwdFormRef" :rules="pwdRules" label-width="100px">
+        <el-form-item label="新密码" prop="password">
+          <el-input v-model="pwdForm.password" type="password" autocomplete="new-password" placeholder="请输入新密码"/>
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirm">
+          <el-input v-model="pwdForm.confirm" type="password" autocomplete="new-password"
+                    placeholder="请再次输入新密码"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="pwdDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPwd">确定</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="profileDialogVisible" title="个人资料" width="500px" destroy-on-close>
+      <el-form :model="profileForm" ref="profileFormRef" label-width="100px">
+        <el-form-item label="头像">
+          <el-upload class="avatar-uploader" action="#" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                     :http-request="uploadAvatar">
+            <el-avatar
+                size="100"
+                :src="profileForm.avatar && profileForm.avatar.startsWith('http') ? profileForm.avatar : '/avatar.png'"
+                class="avatar-img"
+            >
+              <el-icon class="avatar-uploader-icon">
+                <Plus/>
+              </el-icon>
+            </el-avatar>
+          </el-upload>
+        </el-form-item>
+        <el-form-item label="用户账号">
+          <el-input v-model="profileForm.username" disabled/>
+        </el-form-item>
+        <el-form-item label="所属部门">
+          <el-input v-model="profileForm.deptName" disabled/>
+        </el-form-item>
+        <el-form-item label="角色名称">
+          <el-input v-model="profileForm.roleName" disabled/>
+        </el-form-item>
+        <el-form-item label="账号状态">
+          <el-input v-model="profileForm.statusText" disabled/>
+        </el-form-item>
+        <el-form-item label="真实姓名" prop="realName">
+          <el-input v-model="profileForm.realName" placeholder="请输入真实姓名"/>
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="profileForm.phone" placeholder="请输入手机号"/>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="profileDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitProfile">保存修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import {ref, computed, onMounted} from 'vue'
+import {ref, computed, onMounted, onUnmounted} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/store/userStore'
 import request from '@/utils/request'
 import {
-  HomeFilled, User, UserFilled, Setting, Menu,
-  Expand, OfficeBuilding, Files, Fold, Document, Bell,
-  List, Edit, Message, Picture, Plus, Search
+  HomeFilled, Setting, Expand, Fold, Bell, Plus, FullScreen, Aim, SwitchButton, Message, ChatDotSquare
 } from '@element-plus/icons-vue'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import userApi from '@/api/user'
 import {uploadApi} from '@/api/uploadApi'
-import {on, emit, off} from '@/utils/eventBus' // 引入事件总线
+import {on, off} from '@/utils/eventBus'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,146 +218,52 @@ const userStore = useUserStore()
 
 const isCollapse = ref(false)
 const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
-
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
-// 需求1：前端全局搜索相关
-const searchKeyword = ref('')
-// 扁平化所有可访问的菜单列表（用于前端搜索）
-const flattenMenus = computed(() => {
-  const result = []
-
-  // 递归扁平化菜单
-  const flatten = (menus) => {
-    menus.forEach(menu => {
-      // 只处理显示的菜单
-      if (menu.type === 1 && menu.is_hidden !== 1) {
-        // 添加当前菜单（一级菜单）
-        if (menu.path && menu.name) {
-          result.push({
-            value: menu.name,
-            path: menu.path,
-            label: menu.name
-          })
-        }
-
-        // 递归处理子菜单
-        if (menu.children && menu.children.length > 0) {
-          flatten(menu.children.filter(c => c.is_hidden !== 1))
-        }
-      }
-    })
-  }
-
-  // 处理首页
-  result.push({
-    value: '首页',
-    path: '/dashboard',
-    label: '首页'
-  })
-
-  // 处理动态菜单
-  flatten(userStore.menus || [])
-
-  return result
+// 日期显示逻辑
+const currentDate = computed(() => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const week = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][date.getDay()];
+  return `${year}年${month}月${day}日 ${week}`;
 })
 
-// 搜索建议查询方法
-const querySearch = (queryString, callback) => {
-  if (!queryString) {
-    callback([])
-    return
-  }
-
-  // 前端过滤匹配的菜单
-  const results = flattenMenus.value.filter(item => {
-    return item.value.toLowerCase().includes(queryString.toLowerCase())
-  })
-
-  callback(results)
-}
-
-// 选择搜索结果后的处理
-const handleSearchSelect = (item) => {
-  if (item.path) {
-    router.push(item.path).then(() => {
-      searchKeyword.value = '' // 清空搜索框
-    }).catch(err => {
-      console.warn('路由跳转失败:', err)
-      ElMessage.error('无法跳转到该页面')
+// 全屏逻辑
+const isFullscreen = ref(false)
+const toggleFullScreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch((err) => {
+      ElMessage.error(`无法进入全屏: ${err.message}`)
     })
-  }
-}
-
-// 手动点击搜索按钮的处理
-const handleGlobalSearch = () => {
-  if (!searchKeyword.value.trim()) {
-    return ElMessage.warning('请输入搜索关键词')
-  }
-
-  // 查找匹配的菜单
-  const matchedItems = flattenMenus.value.filter(item => {
-    return item.value.toLowerCase().includes(searchKeyword.value.toLowerCase())
-  })
-
-  if (matchedItems.length === 0) {
-    ElMessage.info(`未找到与"${searchKeyword.value}"相关的页面`)
-  } else if (matchedItems.length === 1) {
-    // 只有一个匹配项，直接跳转
-    handleSearchSelect(matchedItems[0])
+    isFullscreen.value = true
   } else {
-    // 多个匹配项，提示选择
-    ElMessage.info(`找到${matchedItems.length}个相关页面，请从下拉列表中选择`)
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+      isFullscreen.value = false
+    }
   }
 }
 
-/**
- * 自动递归过滤隐藏菜单 + 详情页(type !== 1)
- */
+const checkFull = () => {
+  isFullscreen.value = !!document.fullscreenElement
+}
+
 const filteredMenus = computed(() => {
-
   const deepFilter = (menus) => {
-    return (menus || [])
-        .filter(menu => {
-          // 只显示 type === 1 的菜单
-          if (menu.type !== 1) return false
-
-          // 过滤隐藏菜单
-          if (menu.is_hidden === 1) return false
-
-          return true
-        })
-        .map(menu => {
-          if (menu.children && menu.children.length > 0) {
-            return {
-              ...menu,
-              children: deepFilter(menu.children)
-            }
-          }
-          return menu
-        })
+    return (menus || []).filter(menu => menu.type === 1 && menu.is_hidden !== 1)
+        .map(menu => ({
+          ...menu,
+          children: menu.children ? deepFilter(menu.children) : []
+        }))
   }
-
   return deepFilter(userStore.menus)
 })
 
-/**
- * 自动高亮支持详情页
- */
-const activeMenuPath = computed(() => {
-  return route.meta.activeMenu || route.path
-})
+const activeMenuPath = computed(() => route.meta.activeMenu || route.path)
 
-/**
- * 需求2：处理菜单选择事件 - 点击一级菜单跳转到第一个二级菜单
- * 修复：移除 async/await，改为同步执行
- */
-/**
- * 需求2：处理菜单选择事件 - 点击一级菜单跳转到第一个二级菜单
- * 修复：移除 async/await，改为同步执行
- */
 const handleMenuSelect = (index) => {
-  // 查找点击的菜单
   const findMenu = (menus, path) => {
     for (const menu of menus) {
       if (menu.path === path) return menu
@@ -405,69 +274,41 @@ const handleMenuSelect = (index) => {
     }
     return null
   }
-
   const clickedMenu = findMenu(userStore.menus, index)
-
-  // 如果是有子菜单的一级菜单，跳转到第一个二级菜单
-  if (clickedMenu?.children && clickedMenu.children.length > 0) {
-    // 过滤隐藏的二级菜单
+  if (clickedMenu?.children?.length > 0) {
     const visibleChildren = clickedMenu.children.filter(c => c.is_hidden !== 1 && c.type === 1)
     if (visibleChildren.length > 0) {
-      // 确保路由跳转生效（添加立即执行 + 错误捕获）
-      router.push(visibleChildren[0].path).catch(err => {
-        console.warn('路由跳转被拦截:', err)
-        // 兜底：如果路由跳转失败，手动修改地址栏
+      router.push(visibleChildren[0].path).catch(() => {
         window.location.hash = visibleChildren[0].path
       })
     }
   }
 }
 
-/**
- * 图标映射
- */
+// 核心功能点：处理一级菜单（目录）点击时，自动跳转到第一个子项
+const handleParentClick = (menu) => {
+  if (menu.children && menu.children.length > 0) {
+    const visibleChildren = menu.children.filter(c => c.is_hidden !== 1 && c.type === 1)
+    if (visibleChildren.length > 0) {
+      const targetPath = visibleChildren[0].path
+      router.push(targetPath)
+    }
+  }
+}
+
 const iconMap = {
-  home: HomeFilled,
-  menu: Menu,
-  system: Setting,
-  user: User,
-  role: UserFilled,
-  dict: Files,
-  enterprise: OfficeBuilding,
-  list: List,
-  edit: Edit,
-  message: Message,
-  icon: Picture,
-  policy: Document,
-  notice: Bell,
-  default: Menu
+  home: HomeFilled, system: Setting, default: HomeFilled
 }
+const getIconComponent = (menu) => iconMap[menu.iconCode || menu.meta?.icon || 'default'] || HomeFilled
 
-const getIconComponent = (menu) => {
-  const iconCode = menu.iconCode || menu.meta?.icon || 'default'
-  return iconMap[iconCode] || Menu
-}
-
-/**
- * 面包屑 —— 完全动态
- */
 const breadcrumbList = computed(() => {
-
   const result = []
-
   const findPath = (menus, targetPath, parentChain = []) => {
     for (const menu of menus) {
-      if (menu.path === targetPath) {
-        return [...parentChain, menu]
-      }
-
+      if (menu.path === targetPath) return [...parentChain, menu]
       if (route.meta.activeMenu && menu.path === route.meta.activeMenu) {
-        return [...parentChain, menu, {
-          name: route.meta.title,
-          path: route.path
-        }]
+        return [...parentChain, menu, {name: route.meta.title, path: route.path}]
       }
-
       if (menu.children) {
         const found = findPath(menu.children, targetPath, [...parentChain, menu])
         if (found) return found
@@ -475,212 +316,166 @@ const breadcrumbList = computed(() => {
     }
     return null
   }
-
   const chain = findPath(userStore.menus, route.path)
-
   if (chain) {
-    chain.forEach(item => {
+    chain.forEach((item) => {
+      let targetPath = item.path
+      if (item.children && item.children.length > 0) {
+        const firstChild = item.children.find(c => c.is_hidden !== 1)
+        if (firstChild) {
+          targetPath = firstChild.path
+        }
+      }
+
       result.push({
         title: item.name,
-        path: item.path
+        path: targetPath
       })
     })
   }
-
   return result
 })
 
-/**
- * 通知数量
- */
 const unreadCount = ref(0)
 const getUnreadCount = async () => {
   try {
     const res = await request.get('/admin/noticeUser/unreadCount')
     unreadCount.value = res.data || 0
   } catch (e) {
-    console.error('获取未读通知数失败:', e)
+    console.error('获取未读消息失败:', e)
   }
 }
 
-// 新增：监听「刷新未读通知」事件
 on('refreshUnreadNotice', getUnreadCount)
 
-// 新增：页面卸载时移除监听（避免内存泄漏）
-import {onUnmounted} from 'vue'
-
-onUnmounted(() => {
-  off('refreshUnreadNotice', getUnreadCount)
-})
-
-// 原有代码：暴露方法（可以保留，不影响）
-defineExpose({
-  getUnreadCount
-})
-
-/**
- * 核心修改：复用左侧菜单的路由跳转逻辑
- */
 const goMyNotice = async () => {
-  try {
-    // 1. 递归查找"我的通知"菜单（适配动态菜单结构）
-    const findMyNoticeMenu = (menus) => {
-      for (const menu of menus) {
-        // 匹配路径或菜单名称（双重保障，适配不同配置）
-        if ((menu.path && (menu.path === '/notice/my' || menu.path === 'notice/my')) ||
-            (menu.name && menu.name === '我的通知')) {
-          return menu
-        }
-        // 递归查找子菜单
-        if (menu.children && menu.children.length > 0) {
-          const found = findMyNoticeMenu(menu.children)
-          if (found) return found
-        }
+  const findMyNoticeMenu = (menus) => {
+    for (const menu of menus) {
+      if (menu.path && (menu.path === '/notice/my' || menu.path === 'notice/my')) return menu
+      if (menu.name && menu.name.includes('我的通知')) return menu
+
+      if (menu.children && menu.children.length > 0) {
+        const found = findMyNoticeMenu(menu.children)
+        if (found) return found
       }
-      return null
     }
+    return null
+  }
 
-    // 2. 获取我的通知菜单
-    const myNoticeMenu = findMyNoticeMenu(userStore.menus)
-    if (!myNoticeMenu) {
-      ElMessage.error('未找到“我的通知”菜单，请检查菜单权限配置！')
-      return
-    }
+  const myNoticeMenu = findMyNoticeMenu(userStore.menus)
 
-    // 3. 复用菜单的路由跳转逻辑（和左侧菜单点击完全一致）
-    await router.push(myNoticeMenu.path)
-
-    // 4. 跳转成功后刷新未读数量
+  if (myNoticeMenu && myNoticeMenu.path) {
+    const targetPath = myNoticeMenu.path.startsWith('/') ? myNoticeMenu.path : `/${myNoticeMenu.path}`
+    await router.push(targetPath)
     await getUnreadCount()
-  } catch (error) {
-    // 捕获所有跳转异常并提示
-    ElMessage.error(`跳转到通知页面失败：${error.message || '请检查菜单路由配置'}`)
-    console.error('通知页面跳转失败：', error)
+  } else {
+    try {
+      await router.push('/notice/my')
+      await getUnreadCount()
+    } catch (error) {
+      ElMessage.error('未找到相关菜单，请检查权限配置')
+    }
   }
 }
 
 onMounted(() => {
   getUnreadCount()
+  window.addEventListener('fullscreenchange', checkFull)
 })
 
+onUnmounted(() => {
+  off('refreshUnreadNotice', getUnreadCount)
+  window.removeEventListener('fullscreenchange', checkFull)
+})
 
-// 退出登录
 const logout = () => {
-  ElMessageBox.confirm('确定要退出登录吗？', '温馨提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {type: 'warning'}).then(async () => {
     await userStore.logout()
     sessionStorage.clear()
     localStorage.clear()
-    ElMessage.success('退出登录成功！')
+    ElMessage.success('已退出')
     router.replace('/login')
-  }).catch(() => {
-    ElMessage.info('已取消退出登录')
   })
 }
 
-// 修改密码逻辑
 const pwdDialogVisible = ref(false)
 const pwdFormRef = ref(null)
 const pwdForm = ref({password: '', confirm: ''})
 const pwdRules = {
   password: [{required: true, message: '请输入新密码', trigger: 'blur'}, {
     min: 6,
-    message: '密码长度不能少于6位',
+    message: '不少于6位',
     trigger: 'blur'
   }],
-  confirm: [{required: true, message: '请再次输入新密码', trigger: 'blur'}, {
+  confirm: [{required: true, message: '请确认密码', trigger: 'blur'}, {
     validator: (rule, value, callback) => {
       if (value !== pwdForm.value.password) callback(new Error('两次输入不一致'))
       else callback()
     }, trigger: 'blur'
   }]
 }
-
 const openPwdDialog = () => {
-  pwdForm.value = {password: '', confirm: ''}
+  pwdForm.value = {password: '', confirm: ''};
   pwdDialogVisible.value = true
 }
-
 const submitPwd = async () => {
   if (!pwdFormRef.value) return
-  try {
-    await pwdFormRef.value.validate()
-    const id = userStore.userInfo.id
-    if (!id) throw new Error('用户信息不完整')
-    await userApi.updateUserPassword(id, pwdForm.value.password)
-    ElMessage.success('密码修改成功')
-    pwdDialogVisible.value = false
-  } catch (e) {
-    if (!e.fields) ElMessage.error(e.msg || e.message || '密码修改失败')
-  }
+  await pwdFormRef.value.validate()
+  await userApi.updateUserPassword(userStore.userInfo.id, pwdForm.value.password)
+  ElMessage.success('修改成功')
+  pwdDialogVisible.value = false
 }
 
-// 个人资料逻辑
 const profileDialogVisible = ref(false)
 const profileFormRef = ref(null)
 const profileForm = ref({
-  id: '', username: '', realName: '', phone: '', avatar: '',
-  deptName: '', roleName: '', status: 1, statusText: ''
+  id: '',
+  username: '',
+  realName: '',
+  phone: '',
+  avatar: '',
+  deptName: '',
+  roleName: '',
+  statusText: ''
 })
-
 const openProfileDialog = () => {
-  const userInfo = userStore.userInfo
+  const u = userStore.userInfo
   profileForm.value = {
-    id: userInfo.id || '',
-    username: userInfo.username || '',
-    realName: userInfo.realName || '',
-    phone: userInfo.phone || '',
-    avatar: userInfo.avatar || '',
-    deptName: userInfo.deptName || '',
-    roleName: userInfo.roleName || '',
-    status: userInfo.status || 1,
-    statusText: userInfo.status === 1 ? '启用' : '禁用'
+    id: u.id,
+    username: u.username,
+    realName: u.realName,
+    phone: u.phone,
+    avatar: u.avatar,
+    deptName: u.deptName,
+    roleName: u.roleName,
+    statusText: u.status === 1 ? '启用' : '禁用'
   }
   profileDialogVisible.value = true
 }
-
 const beforeAvatarUpload = (file) => {
-  const isImage = file.type.startsWith('image/')
-  const isLt2M = file.size / 1024 / 1024 < 2
-  if (!isImage) ElMessage.error('只能上传图片格式文件！')
-  if (!isLt2M) ElMessage.error('头像图片大小不能超过 2MB！')
-  return isImage && isLt2M
+  const isImg = file.type.startsWith('image/') && file.size / 1024 / 1024 < 2
+  if (!isImg) ElMessage.error('格式不正确或过大')
+  return isImg
 }
-
-const uploadAvatar = async (options) => {
-  const file = options.file
-  const formData = new FormData()
-  formData.append('file', file)
-  try {
-    const imageUrl = await uploadApi.uploadFile(formData)
-    profileForm.value.avatar = imageUrl
-    ElMessage.success('头像上传成功')
-  } catch (error) {
-    ElMessage.error(`头像上传失败：${error.message}`)
-  }
+const uploadAvatar = async (opt) => {
+  const fd = new FormData();
+  fd.append('file', opt.file)
+  profileForm.value.avatar = await uploadApi.uploadFile(fd)
+  ElMessage.success('上传成功')
 }
-
 const submitProfile = async () => {
-  try {
-    if (profileFormRef.value) await profileFormRef.value.validateField(['realName', 'phone'])
-    const userId = profileForm.value.id
-    if (!userId) throw new Error('用户ID不能为空')
-
-    const updateData = {
-      realName: profileForm.value.realName,
-      phone: profileForm.value.phone,
-      avatar: profileForm.value.avatar
-    }
-    await userApi.updateUserProfile(userId, updateData)
-    ElMessage.success('个人资料修改成功')
-    userStore.updateUserInfo(updateData)
-    profileDialogVisible.value = false
-  } catch (e) {
-    ElMessage.error(e.msg || e.message || '个人资料修改失败')
-  }
+  await userApi.updateUserProfile(profileForm.value.id, {
+    realName: profileForm.value.realName,
+    phone: profileForm.value.phone,
+    avatar: profileForm.value.avatar
+  })
+  userStore.updateUserInfo({
+    realName: profileForm.value.realName,
+    phone: profileForm.value.phone,
+    avatar: profileForm.value.avatar
+  })
+  ElMessage.success('修改成功')
+  profileDialogVisible.value = false
 }
 </script>
 
@@ -693,113 +488,49 @@ const submitProfile = async () => {
 .layout-aside {
   background: #fff;
   border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition: width 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+.aside-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .layout-logo {
-  height: 60px;
+  height: 50px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 18px;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .logo-img {
   width: 28px;
   height: 28px;
-  margin-right: 8px;
-  margin-left: 5px;
+  margin-right: 10px;
+  object-fit: contain;
 }
 
 .logo-text {
   font-size: 15px;
-  font-weight: 500;
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
 }
 
-.layout-main {
+.layout-menu {
   flex: 1;
-  display: flex;
-  flex-direction: column;
+  border-right: none;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.layout-header {
-  height: 60px;
-  background: #fff;
-  border-bottom: 1px solid #eee;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.menu-toggle {
-  cursor: pointer;
-  font-size: 20px;
-  color: #606266;
-  margin-right: 16px;
-  flex-shrink: 0;
-}
-
-/* 需求1：全局搜索框样式 */
-.global-search-wrapper {
-  margin-right: 10px;
-  width: 120px;
-}
-
-.global-search-input {
-  --el-input-height: 55px !important;
-  width: 100%;
-}
-
-.breadcrumb-wrapper {
-  flex: 1;
-}
-
-.layout-content {
-  background: #f5f7fa;
-  flex: 1;
-  overflow: auto;
-  padding: 10px;
-}
-
-/* 需求4：用户信息样式调整 */
-.user-info {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-}
-
-.user-info-content {
-  width: 75px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
-  line-height: 1.2;
-  padding: 0 10px;
-}
-
-.user-dept {
-  font-size: 11px;
-  color: #909399;
-}
-
-.notice-icon {
-  font-size: 20px;
-  cursor: pointer;
-  margin-right: 4px;
-}
-
-.notice-badge {
-  cursor: pointer;
-  margin-right: 4px;
-}
+/* --- 图标对齐修复部分 --- */
 
 /* 统一图标容器样式，确保图片和组件图标视觉一致 */
 .menu-icon-wrapper {
@@ -824,53 +555,173 @@ const submitProfile = async () => {
   color: #48a0fa;
 }
 
-/* 折叠状态下图标居中 */
+/* 核心：折叠状态下图标居中修复 */
 :deep(.el-menu--collapse .menu-icon-wrapper) {
   justify-content: center;
 }
 
-:deep(.el-dialog .el-input__inner[type="password"]) {
-  background-color: transparent !important;
+/* 强制覆盖 Element 折叠后的内边距，确保图标处于 64px 的物理中心 */
+:deep(.el-menu--collapse .el-menu-item),
+:deep(.el-menu--collapse .el-sub-menu__title) {
+  padding: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
 }
 
-:deep(.avatar-uploader) {
+/* 隐藏折叠后的子菜单箭头 */
+:deep(.el-menu--collapse .el-sub-menu__icon-arrow) {
+  display: none;
+}
+
+/* --- 原有样式保持不变 --- */
+
+.aside-footer {
+  padding: 10px;
+  border-top: 1px solid #f0f2f5;
+  background: #fcfcfc;
+}
+
+.user-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.user-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.user-card-main {
   display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.user-card-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.user-card-name {
+  font-size: 14px;
+  font-weight: bold;
+  color: #303133;
+}
+
+.user-card-dept {
+  padding-top: 3px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.logout-btn-wrapper {
+  border-top: 1px solid #f0f2f5;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
   justify-content: center;
-}
-
-:deep(.avatar-img), :deep(.header-avatar) {
+  gap: 6px;
+  font-size: 13px;
+  color: #f56c6c;
   cursor: pointer;
-  background-color: #f5f7fa !important;
-  border: 2px solid #856010;
 }
 
-:deep(.avatar-uploader-icon) {
-  font-size: 28px;
-  color: #8c939d;
-  width: 100px;
-  height: 100px;
-  line-height: 100px;
-  text-align: center;
+.layout-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-/* 菜单高亮样式 */
+.layout-header {
+  height: 60px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.header-center {
+  flex: 1;
+  margin: 0 30px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-wrapper {
+  width: 100%;
+  white-space: nowrap;
+}
+
+.scroll-content {
+  display: inline-block;
+  font-size: 14px;
+  color: #606266;
+  padding-left: 100%;
+  animation: scroll-left 20s linear infinite;
+}
+
+@keyframes scroll-left {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.action-item {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #606266;
+}
+
+.action-item:hover {
+  background-color: #f5f7fa;
+  color: #409eff;
+}
+
+.action-icon {
+  font-size: 20px;
+}
+
+.menu-toggle {
+  cursor: pointer;
+  font-size: 20px;
+  color: #606266;
+  margin-right: 16px;
+}
+
+.layout-content {
+  background: #f5f7fa;
+  flex: 1;
+  overflow: auto;
+  padding: 10px;
+}
+
 :deep(.el-menu-item.is-active) {
   color: #409eff !important;
   background-color: #ecf5ff !important;
-}
-
-:deep(.el-sub-menu__title.is-active) {
-  color: #409eff !important;
-}
-
-/* 高亮状态下的图标颜色同步 */
-:deep(.el-menu-item.is-active .menu-icon-component),
-:deep(.el-sub-menu__title.is-active .menu-icon-component) {
-  color: #409eff !important;
-}
-
-/* 搜索下拉建议框样式 */
-:deep(.el-autocomplete-suggestion-list) {
-  max-height: 200px;
 }
 </style>

@@ -56,7 +56,6 @@
           <el-button type="primary" icon="Search" @click="getList">查询</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
           <el-button type="primary" icon="Plus" @click="handleAdd">新增政策</el-button>
-          <!-- 按钮文本中加入隐藏政策数量 -->
           <el-button type="success" icon="View" @click="handleBatchShowHidden">
             恢复已隐藏的 {{ hiddenPolicyCount }} 条政策
           </el-button>
@@ -80,7 +79,6 @@
               >
                 <img :src="img" alt="政策配图"/>
               </div>
-              <!-- 无图片时占位 -->
               <div v-if="!getContentImages(item.content).length" class="item-image placeholder">
                 <i class="el-icon-picture-outline"></i>
               </div>
@@ -90,21 +88,19 @@
             <div class="item-header">
               <div class="item-title">{{ item.title }}</div>
               <div class="item-tag-group">
-                <el-tag size="small" type="primary">已发布</el-tag>
-                <el-tag size="small" type="danger">{{ item.policyTypeName }}</el-tag>
-                <el-tag size="small" type="success">{{ item.publisherName }}</el-tag>
+                <el-tag size="small" type="success">{{ item.policyTypeName }}</el-tag>
               </div>
             </div>
             <div class="item-content" v-html="getContentPreview(item.content)"></div>
             <div class="item-meta">
               <span class="meta-item">👤 {{ item.publisherName }}</span>
+              <span class="meta-item">🏢 {{ getPublisherDept(item) }}</span>
               <span class="meta-item">🕒 {{ item.publishTime ? formatDate(item.publishTime) : '-' }}</span>
             </div>
             <div class="bottem">
               <div class="item-detail">
                 <el-button link type="primary" @click="viewContentDetail(item)" size="small">预览</el-button>
               </div>
-              <!-- 操作按钮固定右下角 - 新增预览按钮在置顶左侧 -->
               <div class="item-actions">
                 <el-switch
                     v-model="item.isTop"
@@ -202,6 +198,8 @@
 import {ref, onMounted, nextTick} from 'vue';
 import {ElMessage, ElMessageBox} from 'element-plus';
 import Editor from '@/components/Editor.vue';
+import {selectItemList} from '@/api/dictItem'
+import userApi from '@/api/user'
 
 import {
   pagePolicy,
@@ -221,6 +219,10 @@ const open = ref(false);
 const dialogTitle = ref('');
 const policyFormRef = ref(null);
 const policyTypeOptions = ref([]);
+
+// 新增：部门列表和用户列表
+const deptList = ref([]);
+const userList = ref([]);
 
 // 新增：隐藏政策数量
 const hiddenPolicyCount = ref(0);
@@ -535,8 +537,55 @@ const getPolicyTypeList = async () => {
   if (res.code === 200) policyTypeOptions.value = res.data || [];
 };
 
+// 新增逻辑：获取发布单位（参照通知逻辑）
+const getPublisherDept = (item) => {
+  let publisherId = item.publisherId || item.createBy || item.publishBy;
+  if (publisherId) {
+    const user = userList.value.find(u => u.id == publisherId);
+    if (user) {
+      return getDeptName(user.deptCode) || '未知单位';
+    }
+  }
+  let userName = (item.publisherName || '').trim();
+  if (userName) {
+    const user = userList.value.find(u => u.realName === userName || u.username === userName);
+    if (user) {
+      return getDeptName(user.deptCode) || '未知单位';
+    }
+  }
+  return '未知单位';
+};
+
+const getDeptName = (deptCode) => {
+  if (!deptCode) return '未知单位';
+  const dept = deptList.value.find(d => d.itemCode === deptCode);
+  return dept ? dept.itemName : '未知单位';
+};
+
+const getDeptList = async () => {
+  try {
+    const res = await selectItemList({dictId: 10, pageNum: 1, pageSize: 999, status: 1});
+    deptList.value = res.data?.records || [];
+  } catch (e) {
+    console.error('获取部门列表失败', e);
+  }
+};
+
+const getUserList = async () => {
+  try {
+    const res = await userApi.getUserPage({pageNum: 1, pageSize: 999});
+    if (res && res.code === 200) {
+      userList.value = res.data.records || [];
+    }
+  } catch (e) {
+    console.error('获取用户列表失败', e);
+  }
+};
+
 onMounted(() => {
   getPolicyTypeList();
+  getDeptList();
+  getUserList();
   getList();
   // 页面初始化时获取隐藏政策数量
   getHiddenPolicyCount();

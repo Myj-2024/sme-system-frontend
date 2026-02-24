@@ -12,8 +12,8 @@
           <div class="stat-value color-blue">{{ realEnterpriseTotal }}</div>
         </div>
         <div class="stat-sub-container-bottom blue-sub">
-          <span class="sub-label">今日新增</span>
-          <span class="sub-value">{{ todayNewEnterpriseCount }}</span>
+          <span class="sub-label">本月新增</span>
+          <span class="sub-value">{{ monthNewEnterpriseCount }}</span>
           <span class="sub-unit">家</span>
         </div>
       </div>
@@ -150,7 +150,12 @@
           <span class="latest-policy-title">最新发布政策</span>
           <el-button text @click="viewAllPolicy">查看全部</el-button>
         </div>
-        <div class="latest-policy-list scroll-container" ref="policyContainerRef">
+        <div
+            class="latest-policy-list scroll-container"
+            ref="policyContainerRef"
+            @mouseenter="stopPolicyScroll"
+            @mouseleave="startPolicyScroll"
+        >
           <div class="scroll-content" ref="policyContentRef">
             <div
                 v-for="item in latestPolicyList"
@@ -212,7 +217,7 @@ import {pagePolicy, getPolicyTypeOptions} from '@/api/policy'
 const router = useRouter()
 
 const realEnterpriseTotal = ref(0)
-const todayNewEnterpriseCount = ref(0)
+const monthNewEnterpriseCount = ref(0)
 const realBzlTotal = ref(0)
 const bzlRate = computed(() => {
   if (realEnterpriseTotal.value === 0) return 0
@@ -268,6 +273,7 @@ const policyContentRef = ref(null)
 
 let charts = []
 let policyScrollTimer = null
+let scrollTop = 0 // 提升为外部变量，记录滚动进度
 
 const normalizeStatus = (status) => {
   if (status === 'UNHANDLED') return 'HANDLING'
@@ -373,7 +379,7 @@ const loadDashboardData = async () => {
     const entRes = await pageEnterprise({pageNum: 1, pageSize: 1000})
     const enterprises = entRes.data.records || []
     realEnterpriseTotal.value = entRes.data.total || enterprises.length
-    todayNewEnterpriseCount.value = enterprises.filter(item => isToday(item.createTime)).length
+    monthNewEnterpriseCount.value = enterprises.filter(item => isCurrentMonth(item.createTime)).length
 
     const bzlRes = await pageSmePle({pageNum: 1, pageSize: 1})
     realBzlTotal.value = bzlRes.data.total || 0
@@ -583,7 +589,6 @@ function startPolicyScroll() {
   if (latestPolicyList.value.length === 0) return
   const content = policyContentRef.value
   if (!content) return
-  let scrollTop = 0
   const originalHeight = latestPolicyList.value.length * 70
   policyScrollTimer = setInterval(() => {
     scrollTop += 1
@@ -596,6 +601,13 @@ function startPolicyScroll() {
   }, 40)
 }
 
+function stopPolicyScroll() {
+  if (policyScrollTimer) {
+    clearInterval(policyScrollTimer)
+    policyScrollTimer = null
+  }
+}
+
 function viewAllPolicy() {
   router.push('/policy/list')
 }
@@ -606,7 +618,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  if (policyScrollTimer) clearInterval(policyScrollTimer)
+  stopPolicyScroll()
   charts.forEach(c => c.dispose())
 })
 </script>
@@ -833,6 +845,12 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 16px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  }
 }
 
 .pie-title, .trend-title, .policy-type-title, .latest-policy-title {
@@ -883,6 +901,8 @@ onUnmounted(() => {
   border-bottom: 1px solid #f0f2f5;
   cursor: pointer;
   height: 70px;
+  /* 修改：将内容容器设为相对定位，方便元信息定位 */
+  position: relative;
 }
 
 .policy-tag {
@@ -912,6 +932,12 @@ onUnmounted(() => {
   }
 }
 
+.policy-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .policy-title {
   font-size: 13px;
   color: #303133;
@@ -919,11 +945,16 @@ onUnmounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: calc(100% - 10px);
 }
 
 .policy-meta {
   font-size: 12px;
   color: #909399;
+  /* 修改：移至右下角 */
+  position: absolute;
+  right: 0;
+  bottom: 12px;
 }
 
 .trend-legend {
