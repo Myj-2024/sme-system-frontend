@@ -67,7 +67,7 @@
                   :key="idx"
                   class="item-image"
               >
-                <img :src="img" alt="通知配图" />
+                <img :src="img" alt="通知配图"/>
               </div>
               <!-- 无图片时占位 -->
               <div v-if="!getContentImages(item.content).length" class="item-image placeholder">
@@ -79,14 +79,17 @@
             <div class="item-header">
               <div class="item-title" @click="goToDetail(item)">{{ item.title }}</div>
               <div class="item-tag-group">
-                <el-tag size="small" type="primary">已发送</el-tag>
+                <!-- 核心修改1：将"已发送"替换为发布单位 -->
+                <el-tag size="small" type="primary">{{ getPublisherDept(item) }}</el-tag>
                 <el-tag size="small" type="danger">{{ formatNoticeType(item.noticeType) }}</el-tag>
-                <el-tag size="small" type="success">{{ item.publisherName }}</el-tag>
+                <!-- 核心修改2：只显示发布人姓名，不再拼接部门 -->
+                <el-tag size="small" type="success">{{ getPublisherName(item) }}</el-tag>
               </div>
             </div>
             <div class="item-content" @click="goToDetail(item)" v-html="getContentPreview(item.content)"></div>
             <div class="item-meta">
-              <span class="meta-item">👤 {{ item.publisherName }}</span>
+              <!-- 同步修改：只显示姓名 -->
+              <span class="meta-item">👤 {{ getPublisherName(item) }}</span>
               <span class="meta-item">🕒 {{ formatTime(item.publishTime) || '-' }}</span>
             </div>
             <div class="bottem">
@@ -149,12 +152,6 @@
             />
           </el-select>
         </el-form-item>
-<!--        <el-form-item label="是否置顶" prop="isTop">-->
-<!--          <el-radio-group v-model="formData.isTop">-->
-<!--            <el-radio label="0">否</el-radio>-->
-<!--            <el-radio label="1">是</el-radio>-->
-<!--          </el-radio-group>-->
-<!--        </el-form-item>-->
         <el-form-item label="发送时间" prop="publishTime">
           <el-date-picker
               v-model="formData.publishTime"
@@ -321,6 +318,73 @@ export default {
     this.getUserList()
   },
   methods: {
+    // 新增：获取发布单位（替换原"已发送"标签）
+    getPublisherDept(item) {
+      // 1. 通过发布人ID获取所属部门
+      let publisherId = null
+      if (item.publisherId) {
+        publisherId = item.publisherId
+      } else if (item.createBy) {
+        publisherId = item.createBy
+      } else if (item.publishBy) {
+        publisherId = item.publishBy
+      }
+
+      if (publisherId) {
+        const user = this.userList.find(u => u.id == publisherId)
+        if (user) {
+          return this.getDeptName(user.deptCode) || '未知单位'
+        }
+      }
+
+      // 2. 兜底：如果无法通过ID获取，尝试从姓名匹配
+      let userName = ''
+      if (item.publisherName) userName = item.publisherName.trim()
+      else if (item.publishUserName) userName = item.publishUserName.trim()
+      else if (item.createUserName) userName = item.createUserName.trim()
+
+      if (userName) {
+        const user = this.userList.find(u => u.realName === userName || u.username === userName)
+        if (user) {
+          return this.getDeptName(user.deptCode) || '未知单位'
+        }
+      }
+
+      return '未知单位'
+    },
+    // 修改：仅获取发布人姓名（移除部门拼接逻辑）
+    getPublisherName(item) {
+      // 1. 优先读取直接返回的发布人姓名字段
+      if (item.publisherName && item.publisherName.trim()) {
+        return item.publisherName.trim()
+      }
+      if (item.publishUserName && item.publishUserName.trim()) {
+        return item.publishUserName.trim()
+      }
+      if (item.createUserName && item.createUserName.trim()) {
+        return item.createUserName.trim()
+      }
+
+      // 2. 通过发布人ID转换为姓名
+      let publisherId = null
+      if (item.publisherId) {
+        publisherId = item.publisherId
+      } else if (item.createBy) {
+        publisherId = item.createBy
+      } else if (item.publishBy) {
+        publisherId = item.publishBy
+      }
+
+      if (publisherId) {
+        const user = this.userList.find(u => u.id == publisherId)
+        if (user) {
+          return user.realName || user.username || '未知用户'
+        }
+      }
+
+      // 3. 兜底显示
+      return '未知发布人'
+    },
     // 跳转到通知详情页
     goToDetail(row) {
       if (row.id) {
@@ -455,11 +519,11 @@ export default {
         }
       }
     },
-    // 获取部门列表
+    // 获取部门列表（确保dictId与后端一致）
     async getDeptList() {
       try {
         const res = await selectItemList({
-          dictId: 10,
+          dictId: 10, // 确认后端部门字典的ID是10，否则修改
           pageNum: 1,
           pageSize: 999,
           status: 1
@@ -494,11 +558,11 @@ export default {
       const user = this.userList.find(u => u.id === userId)
       return user ? `${user.username}（${user.realName || '未填写'}）` : '未知用户'
     },
-    // 根据部门编码获取名称
+    // 修改：兜底文案调整为"未知单位"更贴合语义
     getDeptName(deptCode) {
-      if (!deptCode) return '未分配'
+      if (!deptCode) return '未知单位'
       const dept = this.deptList.find(d => d.itemCode === deptCode)
-      return dept ? dept.itemName : '未分配'
+      return dept ? dept.itemName : '未知单位'
     },
     // 移除用户
     removeUser(userId) {
@@ -568,8 +632,8 @@ export default {
       if (!time) return ''
       return time.replace('T', ' ').substring(0, 19)
     },
-
-    getContentImages (htmlContent) {
+    // 提取内容中的图片
+    getContentImages(htmlContent) {
       if (!htmlContent) return [];
       const imgRegex = /<img[^>]+src="([^"]+)"/g;
       const images = [];
@@ -580,7 +644,6 @@ export default {
       }
       return images;
     },
-
     // 内容预览处理
     getContentPreview(htmlContent) {
       if (!htmlContent) return ''

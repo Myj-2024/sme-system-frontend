@@ -108,7 +108,7 @@ export function addDynamicRoutes(menus) {
         }
     })
 
-    // 2️⃣ 写死三个详情页（核心）
+    // 2️⃣ 写死详情页/特殊页面（核心）
     const detailRoutes = [
         // 字典项
         {
@@ -142,15 +142,26 @@ export function addDynamicRoutes(menus) {
                 activeMenu: '/smePle/handle',
                 hidden: true
             }
+        },
+        // 🔥 新增：政策列表页路由（适配你的目录结构）
+        {
+            path: 'policy/list',
+            name: 'PolicyList',
+            component: () => import('@/views/policy/index.vue'), // 修正为实际组件路径
+            meta: {
+                title: '政策列表',
+                activeMenu: '/policy/list',
+                hidden: false // false=显示在侧边栏，true=隐藏
+            }
         }
     ]
 
     detailRoutes.forEach(route => {
         router.addRoute('Layout', route)
-        console.log('🔥 添加写死详情页:', route.path)
+        console.log('🔥 添加写死页面路由:', route.path)
     })
 
-    // 🔥 关键修改：动态添加404路由，确保所有动态路由加载完成后再添加
+    // 🔥 关键：最后添加404路由，确保动态路由优先匹配
     router.addRoute({
         path: '/:pathMatch(.*)*',
         name: '404',

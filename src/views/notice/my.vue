@@ -79,15 +79,16 @@
             <div class="item-header">
               <div class="item-title" @click="goToDetail(item)">{{ item.title }}</div>
               <div class="item-tag-group">
-                <el-tag size="small" type="primary">已发送</el-tag>
+                <!-- 核心修改1：将"已发送"标签替换为"发布单位" + 单位名称 -->
+                <el-tag size="small" type="primary">{{ getPublisherDept(item) }}</el-tag>
                 <el-tag size="small" type="danger">{{ formatNoticeType(item.noticeType) }}</el-tag>
-                <!-- 核心修改：调用getPublisherName方法获取正确的发布人姓名 -->
+                <!-- 核心修改2：只显示发布人姓名，不再拼接部门 -->
                 <el-tag size="small" type="success">{{ getPublisherName(item) }}</el-tag>
               </div>
             </div>
             <div class="item-content" @click="goToDetail(item)" v-html="getContentPreview(item.content)"></div>
             <div class="item-meta">
-              <!-- 同步修改：使用getPublisherName方法 -->
+              <!-- 核心修改3：只显示姓名，不显示部门 -->
               <span class="meta-item">👤 {{ getPublisherName(item) }}</span>
               <span class="meta-item">🕒 {{ formatTime(item.publishTime) || '-' }}</span>
             </div>
@@ -323,7 +324,41 @@ export default {
     this.getUserList()
   },
   methods: {
-    // 新增：获取发布人姓名（兼容多种字段命名）
+    // 新增：获取发布单位（替换原"已发送"标签）
+    getPublisherDept(item) {
+      // 1. 通过发布人ID获取所属部门
+      let publisherId = null
+      if (item.publisherId) {
+        publisherId = item.publisherId
+      } else if (item.createBy) {
+        publisherId = item.createBy
+      } else if (item.publishBy) {
+        publisherId = item.publishBy
+      }
+
+      if (publisherId) {
+        const user = this.userList.find(u => u.id == publisherId)
+        if (user) {
+          return this.getDeptName(user.deptCode) || '未知单位'
+        }
+      }
+
+      // 2. 兜底：如果无法通过ID获取，尝试从姓名匹配
+      let userName = ''
+      if (item.publisherName) userName = item.publisherName.trim()
+      else if (item.publishUserName) userName = item.publishUserName.trim()
+      else if (item.createUserName) userName = item.createUserName.trim()
+
+      if (userName) {
+        const user = this.userList.find(u => u.realName === userName || u.username === userName)
+        if (user) {
+          return this.getDeptName(user.deptCode) || '未知单位'
+        }
+      }
+
+      return '未知单位'
+    },
+    // 恢复：只获取发布人姓名（不再拼接部门）
     getPublisherName(item) {
       // 1. 优先读取直接返回的发布人姓名字段
       if (item.publisherName && item.publisherName.trim()) {
@@ -336,7 +371,7 @@ export default {
         return item.createUserName.trim()
       }
 
-      // 2. 通过发布人ID转换为姓名（核心修复逻辑）
+      // 2. 通过发布人ID转换为姓名
       let publisherId = null
       if (item.publisherId) {
         publisherId = item.publisherId
@@ -531,9 +566,9 @@ export default {
     },
     // 根据部门编码获取名称
     getDeptName(deptCode) {
-      if (!deptCode) return '未分配'
+      if (!deptCode) return '未知单位'
       const dept = this.deptList.find(d => d.itemCode === deptCode)
-      return dept ? dept.itemName : '未分配'
+      return dept ? dept.itemName : '未知单位'
     },
     // 移除用户
     removeUser(userId) {
