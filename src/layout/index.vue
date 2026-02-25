@@ -464,18 +464,32 @@ const uploadAvatar = async (opt) => {
   ElMessage.success('上传成功')
 }
 const submitProfile = async () => {
-  await userApi.updateUserProfile(profileForm.value.id, {
-    realName: profileForm.value.realName,
-    phone: profileForm.value.phone,
-    avatar: profileForm.value.avatar
-  })
-  userStore.updateUserInfo({
-    realName: profileForm.value.realName,
-    phone: profileForm.value.phone,
-    avatar: profileForm.value.avatar
-  })
-  ElMessage.success('修改成功')
-  profileDialogVisible.value = false
+  try {
+    // 1. 调用接口保存到数据库
+    const res = await userApi.updateUserProfile(profileForm.value.id, {
+      realName: profileForm.value.realName,
+      phone: profileForm.value.phone,
+      avatar: profileForm.value.avatar
+    })
+
+    // 2. 根据通用 Result 对象判断业务是否成功
+    if (res && (res.code === 200 || res.success === true)) {
+      // 3. 实时刷新：直接更新 Pinia 中的状态属性
+      // 既然 updateUserInfo 不存在，我们直接赋值，Vue 的响应式会自动同步所有引用处
+      userStore.userInfo.realName = profileForm.value.realName
+      userStore.userInfo.phone = profileForm.value.phone
+      userStore.userInfo.avatar = profileForm.value.avatar
+
+      ElMessage.success('修改成功')
+      profileDialogVisible.value = false
+    } else {
+      ElMessage.error(res?.message || '保存失败')
+    }
+  } catch (error) {
+    console.error('更新个人资料失败:', error)
+    // 这里的提示取决于你拦截器的封装，如果拦截器已经弹窗，这里可以不弹
+    ElMessage.error('网络请求异常')
+  }
 }
 </script>
 
