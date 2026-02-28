@@ -55,7 +55,10 @@
               <h3 class="policy-title">{{ item.title }}</h3>
               <p class="policy-summary">{{ getPlainContent(item.content) }}</p>
               <div class="main-footer">
-                <span class="publisher"><i class="el-icon-user"></i> {{ item.publisherName }}</span>
+                <!-- 核心修改1：发布人改为发布单位，显示publisherDeptName -->
+                <span class="publisher"><i class="el-icon-office-building"></i> {{
+                    item.publisherDeptName || '未知单位'
+                  }}</span>
                 <span class="view-more">阅读详情 <i class="el-icon-right"></i></span>
               </div>
             </div>
@@ -90,7 +93,10 @@
         <div class="detail-header">
           <h1>{{ selectedPolicy.title }}</h1>
           <div class="info-tags">
-            <span class="info-item"><i class="el-icon-user"></i> 发布人：{{ selectedPolicy.publisherName }}</span>
+            <!-- 核心修改2：抽屉中发布人改为发布单位，显示publisherDeptName -->
+            <span class="info-item"><i class="el-icon-office-building"></i> 发布单位：{{
+                selectedPolicy.publisherDeptName || '未知单位'
+              }}</span>
             <span class="info-item"><i class="el-icon-collection-tag"></i> 类型：{{
                 selectedPolicy.policyTypeName
               }}</span>

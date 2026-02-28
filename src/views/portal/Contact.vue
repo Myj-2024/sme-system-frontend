@@ -29,10 +29,12 @@
 <script setup>
 import {ref, onMounted, onUnmounted} from 'vue'
 
-// --- 关键配置：请填入您申请的真实数据 ---
+// --- 关键配置 ---
 const amapConfig = {
   key: '44f0ed613243cb8061af74b2a7fbe0ec',
   securityJsCode: '94c5c8e277897fe5b7af231d3581f087',
+  // 修改为指定的默认经纬度
+  defaultLngLat: [103.550173, 35.485621],
   defaultAddress: '甘肃省广河县中小微企业服务中心'
 }
 
@@ -57,24 +59,26 @@ const initMap = () => {
     // 3. 初始化地图
     map = new window.AMap.Map('amap-container', {
       viewMode: '3D',
-      zoom: 15,
+      zoom: 16, // 稍微调高缩放级别以更清晰看到位置
+      center: amapConfig.defaultLngLat // 默认中心点
     })
 
     geocoder = new window.AMap.Geocoder()
 
-    // 4. 初始定位（按默认地址打点）
-    geocoder.getLocation(amapConfig.defaultAddress, (status, result) => {
-      if (status === 'complete' && result.geocodes.length) {
-        const lnglat = result.geocodes[0].location
-        updateMarker(lnglat, amapConfig.defaultAddress)
-        map.setCenter(lnglat)
-      }
+    // 4. 初始打点：直接使用经纬度坐标
+    const initPoint = new window.AMap.LngLat(amapConfig.defaultLngLat[0], amapConfig.defaultLngLat[1])
+
+    // 获取初始位置的详细地址描述（逆地理编码）
+    geocoder.getAddress(initPoint, (status, result) => {
+      const addr = (status === 'complete' && result.regeocode)
+          ? result.regeocode.formattedAddress
+          : amapConfig.defaultAddress
+      updateMarker(initPoint, addr)
     })
 
     // 5. 绑定地图点击事件：手动设置位置
     map.on('click', (e) => {
       const lnglat = e.lnglat
-      // 逆地理编码：经纬度 -> 地址字符串
       geocoder.getAddress(lnglat, (status, result) => {
         if (status === 'complete' && result.regeocode) {
           const address = result.regeocode.formattedAddress
@@ -98,10 +102,9 @@ const updateMarker = (lnglat, address) => {
     marker = new window.AMap.Marker({
       position: lnglat,
       map: map,
-      draggable: true // 设置标记可拖拽
+      draggable: true
     })
 
-    // 拖拽结束事件
     marker.on('dragend', (e) => {
       geocoder.getAddress(e.lnglat, (status, result) => {
         if (status === 'complete') updateMarker(e.lnglat, result.regeocode.formattedAddress)
@@ -189,6 +192,6 @@ onUnmounted(() => {
 }
 
 :deep(.amap-logo), :deep(.amap-copyright) {
-  display: none !important; // 隐藏高德LOGO使页面更清爽
+  display: none !important;
 }
 </style>
