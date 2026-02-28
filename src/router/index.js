@@ -112,19 +112,19 @@ export function addDynamicRoutes(menus) {
 
     const detailRoutes = [
         {
-            path: 'dict/data/:dictCode',
+            path: '/dict/data/:dictCode',
             name: 'DictData',
             component: () => import('@/views/system/dict-data.vue'),
             meta: {title: '字典项管理', activeMenu: '/system/dict', hidden: true}
         },
         {
-            path: 'notice/detail/:id',
+            path: '/notice/detail/:id',
             name: 'NoticeDetail',
             component: () => import('@/views/notice/detail.vue'),
             meta: {title: '通知详情', activeMenu: '/notice/index', hidden: true}
         },
         {
-            path: 'smePle/handle/detail',
+            path: '/smePle/handle/detail',
             name: 'PackageProcessDetail',
             component: () => import('@/views/smePle/handle/PackageProcessDetail.vue'),
             meta: {title: '办理进度详情', activeMenu: '/smePle/handle', hidden: true}
