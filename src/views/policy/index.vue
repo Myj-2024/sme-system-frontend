@@ -493,7 +493,7 @@ const handleBatchShowHidden = async () => {
   try {
     const ids = await getHiddenPolicyIds().then(res => res.data || []);
     if (ids.length === 0) return ElMessage.info('暂无隐藏政策');
-    await ElMessageBox.confirm(`确定恢复 **${ids.length}** 条已隐藏政策吗？`, '提示');
+    await ElMessageBox.confirm(`确定恢复 ${ids.length} 条已隐藏政策吗？`, '提示');
     const res = await batchShowPolicies(ids);
     if (res.code === 200) {
       ElMessage.success(`已成功恢复 ${ids.length} 条政策`);

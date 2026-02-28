@@ -16,7 +16,7 @@
             :unique-opened="true"
             @select="handleMenuSelect"
         >
-          <el-menu-item index="/dashboard">
+          <el-menu-item :index="resolvePath('/dashboard')">
             <el-icon class="menu-icon-wrapper">
               <HomeFilled class="menu-icon-component"/>
             </el-icon>
@@ -24,7 +24,7 @@
           </el-menu-item>
 
           <template v-for="menu in filteredMenus" :key="menu.id">
-            <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="menu.path">
+            <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="resolvePath(menu.path)">
               <template #title>
                 <el-icon class="menu-icon-wrapper">
                   <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
@@ -34,7 +34,7 @@
               </template>
 
               <el-menu-item v-for="child in menu.children.filter(c => c.is_hidden !== 1)" :key="child.id"
-                            :index="child.path">
+                            :index="resolvePath(child.path)">
                 <el-icon class="menu-icon-wrapper">
                   <img v-if="child.iconUrl && child.iconUrl.trim()" :src="child.iconUrl" class="menu-icon-img"/>
                   <component v-else :is="getIconComponent(child)" class="menu-icon-component"/>
@@ -43,7 +43,7 @@
               </el-menu-item>
             </el-sub-menu>
 
-            <el-menu-item v-else :index="menu.path">
+            <el-menu-item v-else :index="resolvePath(menu.path)">
               <el-icon class="menu-icon-wrapper">
                 <img v-if="menu.iconUrl && menu.iconUrl.trim()" :src="menu.iconUrl" class="menu-icon-img"/>
                 <component v-else :is="getIconComponent(menu)" class="menu-icon-component"/>
@@ -87,8 +87,8 @@
 
           <div class="breadcrumb-wrapper">
             <el-breadcrumb separator="/" class="custom-breadcrumb">
-              <el-breadcrumb-item to="/dashboard">首页</el-breadcrumb-item>
-              <el-breadcrumb-item v-for="(item, index) in breadcrumbList" :key="index" :to="item.path">
+              <el-breadcrumb-item :to="resolvePath('/dashboard')">首页</el-breadcrumb-item>
+              <el-breadcrumb-item v-for="(item, index) in breadcrumbList" :key="index" :to="resolvePath(item.path)">
                 {{ item.title }}
               </el-breadcrumb-item>
             </el-breadcrumb>
@@ -107,7 +107,7 @@
           <div class="action-item" @click="goMyNotice">
             <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
               <el-icon class="action-icon">
-                <Message />
+                <Message/>
               </el-icon>
             </el-badge>
           </div>
@@ -220,6 +220,16 @@ const isCollapse = ref(false)
 const toggleSidebar = () => (isCollapse.value = !isCollapse.value)
 const userName = computed(() => userStore.userInfo?.realName || '管理员')
 
+// 新增辅助函数：统一处理路径拼接，确保所有路径都走 /admin
+const resolvePath = (path) => {
+  if (!path) return '/admin/dashboard'
+  // 如果已经是完整路径则直接返回
+  if (path.startsWith('/admin/')) return path
+  // 拼接前缀
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path
+  return `/admin/${cleanPath}`
+}
+
 // 日期显示逻辑
 const currentDate = computed(() => {
   const date = new Date();
@@ -264,33 +274,14 @@ const filteredMenus = computed(() => {
 const activeMenuPath = computed(() => route.meta.activeMenu || route.path)
 
 const handleMenuSelect = (index) => {
-  const findMenu = (menus, path) => {
-    for (const menu of menus) {
-      if (menu.path === path) return menu
-      if (menu.children) {
-        const found = findMenu(menu.children, path)
-        if (found) return found
-      }
-    }
-    return null
-  }
-  const clickedMenu = findMenu(userStore.menus, index)
-  if (clickedMenu?.children?.length > 0) {
-    const visibleChildren = clickedMenu.children.filter(c => c.is_hidden !== 1 && c.type === 1)
-    if (visibleChildren.length > 0) {
-      router.push(visibleChildren[0].path).catch(() => {
-        window.location.hash = visibleChildren[0].path
-      })
-    }
-  }
+  // el-menu router 模式下会自动根据 index 跳转，这里已经通过 resolvePath 修正了 index
 }
 
-// 核心功能点：处理一级菜单（目录）点击时，自动跳转到第一个子项
 const handleParentClick = (menu) => {
   if (menu.children && menu.children.length > 0) {
     const visibleChildren = menu.children.filter(c => c.is_hidden !== 1 && c.type === 1)
     if (visibleChildren.length > 0) {
-      const targetPath = visibleChildren[0].path
+      const targetPath = resolvePath(visibleChildren[0].path)
       router.push(targetPath)
     }
   }
@@ -304,9 +295,12 @@ const getIconComponent = (menu) => iconMap[menu.iconCode || menu.meta?.icon || '
 const breadcrumbList = computed(() => {
   const result = []
   const findPath = (menus, targetPath, parentChain = []) => {
+    // 这里对比时需要兼容带不带 /admin 的情况
     for (const menu of menus) {
-      if (menu.path === targetPath) return [...parentChain, menu]
-      if (route.meta.activeMenu && menu.path === route.meta.activeMenu) {
+      const fullMenuPath = resolvePath(menu.path)
+      if (fullMenuPath === targetPath) return [...parentChain, menu]
+
+      if (route.meta.activeMenu && resolvePath(menu.path) === resolvePath(route.meta.activeMenu)) {
         return [...parentChain, menu, {name: route.meta.title, path: route.path}]
       }
       if (menu.children) {
@@ -351,7 +345,8 @@ on('refreshUnreadNotice', getUnreadCount)
 const goMyNotice = async () => {
   const findMyNoticeMenu = (menus) => {
     for (const menu of menus) {
-      if (menu.path && (menu.path === '/notice/my' || menu.path === 'notice/my')) return menu
+      const p = menu.path || ''
+      if (p.includes('notice/my')) return menu
       if (menu.name && menu.name.includes('我的通知')) return menu
 
       if (menu.children && menu.children.length > 0) {
@@ -365,16 +360,12 @@ const goMyNotice = async () => {
   const myNoticeMenu = findMyNoticeMenu(userStore.menus)
 
   if (myNoticeMenu && myNoticeMenu.path) {
-    const targetPath = myNoticeMenu.path.startsWith('/') ? myNoticeMenu.path : `/${myNoticeMenu.path}`
-    await router.push(targetPath)
-    await getUnreadCount()
+    router.push(resolvePath(myNoticeMenu.path))
+    getUnreadCount()
   } else {
-    try {
-      await router.push('/notice/my')
-      await getUnreadCount()
-    } catch (error) {
+    router.push('/admin/notice/my').catch(() => {
       ElMessage.error('未找到相关菜单，请检查权限配置')
-    }
+    })
   }
 }
 
@@ -394,7 +385,7 @@ const logout = () => {
     sessionStorage.clear()
     localStorage.clear()
     ElMessage.success('已退出')
-    router.replace('/login')
+    router.replace('/home') // 退出后跳转回门户首页
   })
 }
 
@@ -465,21 +456,16 @@ const uploadAvatar = async (opt) => {
 }
 const submitProfile = async () => {
   try {
-    // 1. 调用接口保存到数据库
     const res = await userApi.updateUserProfile(profileForm.value.id, {
       realName: profileForm.value.realName,
       phone: profileForm.value.phone,
       avatar: profileForm.value.avatar
     })
 
-    // 2. 根据通用 Result 对象判断业务是否成功
     if (res && (res.code === 200 || res.success === true)) {
-      // 3. 实时刷新：直接更新 Pinia 中的状态属性
-      // 既然 updateUserInfo 不存在，我们直接赋值，Vue 的响应式会自动同步所有引用处
       userStore.userInfo.realName = profileForm.value.realName
       userStore.userInfo.phone = profileForm.value.phone
       userStore.userInfo.avatar = profileForm.value.avatar
-
       ElMessage.success('修改成功')
       profileDialogVisible.value = false
     } else {
@@ -487,13 +473,13 @@ const submitProfile = async () => {
     }
   } catch (error) {
     console.error('更新个人资料失败:', error)
-    // 这里的提示取决于你拦截器的封装，如果拦截器已经弹窗，这里可以不弹
     ElMessage.error('网络请求异常')
   }
 }
 </script>
 
 <style scoped>
+/* 样式部分保持不变，省略以节省空间，请直接沿用你原始文件的 style */
 .admin-layout {
   display: flex;
   height: 100vh;
@@ -544,9 +530,6 @@ const submitProfile = async () => {
   overflow-x: hidden;
 }
 
-/* --- 图标对齐修复部分 --- */
-
-/* 统一图标容器样式，确保图片和组件图标视觉一致 */
 .menu-icon-wrapper {
   display: flex;
   justify-content: center;
@@ -555,7 +538,6 @@ const submitProfile = async () => {
   height: 18px;
 }
 
-/* 图片图标样式 */
 .menu-icon-img {
   width: 18px;
   height: 18px;
@@ -563,32 +545,25 @@ const submitProfile = async () => {
   vertical-align: middle;
 }
 
-/* Element组件图标样式 */
 .menu-icon-component {
   font-size: 18px;
   color: #48a0fa;
 }
 
-/* 核心：折叠状态下图标居中修复 */
 :deep(.el-menu--collapse .menu-icon-wrapper) {
   justify-content: center;
 }
 
-/* 强制覆盖 Element 折叠后的内边距，确保图标处于 64px 的物理中心 */
-:deep(.el-menu--collapse .el-menu-item),
-:deep(.el-menu--collapse .el-sub-menu__title) {
+:deep(.el-menu--collapse .el-menu-item), :deep(.el-menu--collapse .el-sub-menu__title) {
   padding: 0 !important;
   display: flex !important;
   justify-content: center !important;
   align-items: center !important;
 }
 
-/* 隐藏折叠后的子菜单箭头 */
 :deep(.el-menu--collapse .el-sub-menu__icon-arrow) {
   display: none;
 }
-
-/* --- 原有样式保持不变 --- */
 
 .aside-footer {
   padding: 10px;
@@ -688,8 +663,12 @@ const submitProfile = async () => {
 }
 
 @keyframes scroll-left {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
 .header-right {

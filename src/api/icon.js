@@ -106,6 +106,7 @@ export function uploadFile(formData) {
         });
     });
 }
+
 export default {
     ...iconApi
 }

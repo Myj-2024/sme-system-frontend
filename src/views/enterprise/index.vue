@@ -70,7 +70,8 @@
     </el-card>
 
     <el-card class="list-card" shadow="never">
-      <el-table :data="enterpriseList" v-loading="loading" border stripe style="width: 100%; margin-top: 20px; font-size: 12px">
+      <el-table :data="enterpriseList" v-loading="loading" border stripe
+                style="width: 100%; margin-top: 20px; font-size: 12px">
         <el-table-column prop="id" label="ID" align="center" width="50"/>
         <el-table-column prop="enterpriseName" label="企业名称" align="center" min-width="200"/>
         <el-table-column prop="creditCode" label="统一社会信用代码" align="center" min-width="160"/>
@@ -98,10 +99,23 @@
             {{ getDictLabel(industryOptions, row.industryId) || '-' }}
           </template>
         </el-table-column>
-        <!-- 新增：主要产品列（位于所属行业后） -->
         <el-table-column prop="mainProduct" label="主要产品" align="center" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             {{ row.mainProduct || '-' }}
+          </template>
+        </el-table-column>
+        <!-- 新增：企业简介列（点击查看完整内容） -->
+        <el-table-column label="企业简介" align="center" min-width="100">
+          <template #default="{ row }">
+            <el-button
+                link
+                type="primary"
+                icon="Document"
+                size="small"
+                @click="viewEnterpriseIntro(row)"
+            >
+              查看简介
+            </el-button>
           </template>
         </el-table-column>
         <el-table-column prop="businessStatus" label="经营状态" align="center" min-width="90">
@@ -124,6 +138,19 @@
             {{ row.updateTime ? formatDate(row.updateTime) : '-' }}
           </template>
         </el-table-column>
+        <!-- 修改：是否展示改为操作按钮列 -->
+        <el-table-column label="展示状态" align="center" min-width="100">
+          <template #default="{ row }">
+            <el-button
+                :type="row.isShow === 1 ? 'success' : 'danger'"
+                size="small"
+                icon="View"
+                @click="toggleIsShow(row)"
+            >
+              {{ row.isShow === 1 ? '展示中' : '已隐藏' }}
+            </el-button>
+          </template>
+        </el-table-column>
         <el-table-column label="操作" align="center" width="130" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" icon="Edit" @click="handleEdit(row)" size="small">修改</el-button>
@@ -144,7 +171,20 @@
       />
     </el-card>
 
-    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="700px" destroy-on-close>
+    <!-- 企业简介查看弹窗 -->
+    <el-dialog
+        title="企业简介"
+        v-model="introDialogVisible"
+        width="800px"
+        destroy-on-close
+    >
+      <div class="intro-content" v-html="currentEnterpriseIntro"></div>
+      <template #footer>
+        <el-button @click="introDialogVisible = false">关 闭</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog :title="dialogTitle" v-model="dialogVisible" width="900px" destroy-on-close>
       <el-form :model="form" :rules="rules" ref="enterpriseFormRef" label-width="120px">
         <el-form-item label="企业名称" prop="enterpriseName">
           <el-input v-model="form.enterpriseName" placeholder="请输入企业名称"/>
@@ -211,7 +251,6 @@
             />
           </el-select>
         </el-form-item>
-        <!-- 新增：主要产品表单项（位于所属行业下方） -->
         <el-form-item label="主要产品" prop="mainProduct">
           <el-input
               v-model="form.mainProduct"
@@ -234,6 +273,18 @@
             />
           </el-select>
         </el-form-item>
+        <el-form-item label="是否展示" prop="isShow">
+          <el-select
+              v-model="form.isShow"
+              placeholder="请选择是否展示"
+          >
+            <el-option label="展示" value="1"/>
+            <el-option label="隐藏" value="0"/>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="企业简介" prop="enterpriseIntro">
+          <Editor v-model="form.enterpriseIntro"/>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取 消</el-button>
@@ -254,27 +305,34 @@ import {
   addEnterprise,
   updateEnterprise,
   deleteEnterprise,
-  changeEnterpriseStatus
+  changeEnterpriseStatus,
+  updateEnterpriseIsShow,
+  uploadFile // 新增：导入图像上传接口方法
 } from '@/api/enterprise'
-import { checkEnterpriseBind } from '@/api/smeple.js'
+import {checkEnterpriseBind} from '@/api/smeple.js'
+import Editor from '@/components/Editor.vue'
 
 // 分页相关
-const pageNum = ref(1)          // 当前页码
-const pageSize = ref(20)        // 每页条数
-const filteredTotal = ref(0)    // 总条数（分页组件核心）
-const loading = ref(false)      // 加载状态
+const pageNum = ref(1)
+const pageSize = ref(20)
+const filteredTotal = ref(0)
+const loading = ref(false)
 
 // 数据存储
-const enterpriseList = ref([])  // 企业列表数据
-const dialogVisible = ref(false)// 弹窗显示状态
-const dialogTitle = ref('')     // 弹窗标题
-const enterpriseFormRef = ref(null) // 表单引用
+const enterpriseList = ref([])
+const dialogVisible = ref(false)
+const dialogTitle = ref('')
+const enterpriseFormRef = ref(null)
+
+// 新增：企业简介弹窗相关
+const introDialogVisible = ref(false)
+const currentEnterpriseIntro = ref('')
 
 // 字典项数据源
-const enterpriseTypeOptions = ref([])   // 企业类型
-const townOptions = ref([])             // 所属乡镇
-const industryOptions = ref([])         // 所属行业
-const businessStatusOptions = ref([])   // 经营状态
+const enterpriseTypeOptions = ref([])
+const townOptions = ref([])
+const industryOptions = ref([])
+const businessStatusOptions = ref([])
 
 // 查询表单
 const searchForm = reactive({
@@ -285,7 +343,7 @@ const searchForm = reactive({
   businessStatus: ''
 })
 
-// 新增/修改表单（新增mainProduct字段）
+// 新增/修改表单
 const form = reactive({
   id: undefined,
   enterpriseName: '',
@@ -298,11 +356,13 @@ const form = reactive({
   establishTime: '',
   townId: '',
   industryId: '',
-  mainProduct: '', // 新增：主要产品字段
-  businessStatus: 'NORMAL' // 默认正常经营
+  mainProduct: '',
+  businessStatus: 'NORMAL',
+  isShow: '1',
+  enterpriseIntro: ''
 })
 
-// 表单校验规则（新增mainProduct非必填，可根据需求调整）
+// 表单校验规则
 const rules = {
   enterpriseName: [{required: true, message: '请输入企业名称', trigger: 'blur'}],
   creditCode: [{required: true, message: '请输入统一社会信用代码', trigger: 'blur'}],
@@ -312,7 +372,9 @@ const rules = {
   townId: [{required: true, message: '请选择所属乡镇', trigger: 'change'}],
   industryId: [{required: true, message: '请选择所属行业', trigger: 'change'}],
   businessStatus: [{required: true, message: '请选择经营状态', trigger: 'change'}],
-  mainProduct: [{required: false, message: '请输入主要产品', trigger: 'blur'}] // 非必填，可改为required: true
+  mainProduct: [{required: false, message: '请输入主要产品', trigger: 'blur'}],
+  isShow: [{required: true, message: '请选择是否展示', trigger: 'change'}],
+  enterpriseIntro: [{required: false, message: '请输入企业简介', trigger: 'blur'}]
 }
 
 // 获取字典项数据
@@ -356,11 +418,10 @@ const getStatusTagType = (code) => {
   }
 }
 
-// 获取企业列表（核心：修复分页逻辑）
+// 获取企业列表
 const getList = async () => {
   loading.value = true
   try {
-    // 过滤空值查询条件
     const queryParams = {...searchForm}
     Object.keys(queryParams).forEach(key => {
       if (queryParams[key] === '') {
@@ -368,17 +429,13 @@ const getList = async () => {
       }
     })
 
-    // 组装分页参数 + 查询条件
     const pageParams = {
       pageNum: pageNum.value,
       pageSize: pageSize.value,
       ...queryParams
     }
 
-    // 调用分页接口
     const res = await pageEnterprise(pageParams)
-
-    // 适配后端分页返回格式（根据实际后端返回调整）
     enterpriseList.value = res.data?.records || res.data || []
     filteredTotal.value = res.data?.total || 0
   } catch (e) {
@@ -389,7 +446,7 @@ const getList = async () => {
   }
 }
 
-// 提交表单（新增/修改）
+// 提交表单
 const submitForm = () => {
   if (!enterpriseFormRef.value) return
   enterpriseFormRef.value.validate(async (valid) => {
@@ -403,7 +460,7 @@ const submitForm = () => {
           ElMessage.success('新增企业成功')
         }
         dialogVisible.value = false
-        getList() // 提交后刷新列表
+        getList()
       } catch (e) {
         console.error("保存企业信息失败:", e)
         ElMessage.error('保存企业信息失败')
@@ -423,6 +480,29 @@ const handleStatusChange = async (row) => {
   }
 }
 
+// 新增：查看企业简介
+const viewEnterpriseIntro = (row) => {
+  currentEnterpriseIntro.value = row.enterpriseIntro || '该企业暂无简介'
+  introDialogVisible.value = true
+}
+
+// 新增：切换是否展示状态
+const toggleIsShow = async (row) => {
+  const newIsShow = row.isShow === 1 ? 0 : 1
+  const tip = newIsShow === 1 ? '展示' : '隐藏'
+
+  try {
+    // 调用专门的展示状态切换接口（传递id和isShow作为路径参数）
+    await updateEnterpriseIsShow(row.id, newIsShow)
+
+    row.isShow = newIsShow // 本地更新状态，无需刷新列表
+    ElMessage.success(`已将${row.enterpriseName}设置为${tip}状态`)
+  } catch (e) {
+    console.error("切换展示状态失败:", e)
+    ElMessage.error(`切换${tip}状态失败，请重试`)
+  }
+}
+
 // 新增企业
 const handleAdd = () => {
   resetForm()
@@ -436,7 +516,7 @@ const handleEdit = async (row) => {
   try {
     const res = await getEnterpriseById(row.id)
     const enterpriseData = res.data || res
-    Object.assign(form, enterpriseData) // 自动赋值mainProduct字段
+    Object.assign(form, enterpriseData)
     dialogTitle.value = '修改企业'
     dialogVisible.value = true
   } catch (e) {
@@ -457,7 +537,6 @@ const handleDelete = (row) => {
       }
   ).then(async () => {
     try {
-      // 检查企业是否被包抓联引用
       const checkRes = await checkEnterpriseBind(row.id)
       if (checkRes.data?.hasBind) {
         ElMessage.error('该企业已被包抓联关联，无法删除！')
@@ -484,11 +563,11 @@ const resetSearch = () => {
     industryId: '',
     businessStatus: ''
   })
-  pageNum.value = 1 // 重置查询回到第一页
+  pageNum.value = 1
   getList()
 }
 
-// 重置表单（新增mainProduct重置）
+// 重置表单
 const resetForm = () => {
   Object.assign(form, {
     id: undefined,
@@ -502,8 +581,10 @@ const resetForm = () => {
     establishTime: '',
     townId: '',
     industryId: '',
-    mainProduct: '', // 重置主要产品
-    businessStatus: 'NORMAL'
+    mainProduct: '',
+    businessStatus: 'NORMAL',
+    isShow: '1',
+    enterpriseIntro: ''
   })
   if (enterpriseFormRef.value) {
     enterpriseFormRef.value.resetFields()
@@ -513,14 +594,14 @@ const resetForm = () => {
 // 分页大小变化
 const handleSizeChange = val => {
   pageSize.value = val
-  pageNum.value = 1 // 页大小变化回到第一页
-  getList() // 重新查询数据
+  pageNum.value = 1
+  getList()
 }
 
 // 页码变化
 const handleCurrentChange = val => {
   pageNum.value = val
-  getList() // 重新查询数据
+  getList()
 }
 
 // 页面挂载初始化
@@ -538,5 +619,17 @@ onMounted(async () => {
 .pagination {
   margin-top: 20px;
   text-align: right;
+}
+
+:deep(.tinymce-editor) {
+  margin-top: 8px;
+}
+
+/* 企业简介弹窗样式 */
+.intro-content {
+  padding: 10px 0;
+  line-height: 1.8;
+  font-size: 14px;
+  color: #333;
 }
 </style>

@@ -1,9 +1,8 @@
-// src/views/login/login.js
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '@/store/userStore'
-import service from '@/utils/request'
+import { useUserStore } from '@/store/userStore.js'
+import service from '@/utils/request.js'
 
 export function useLoginLogic() {
     const router = useRouter()
@@ -40,13 +39,12 @@ export function useLoginLogic() {
             ElMessage.success('验证成功')
         } else {
             sliderSuccess.value = false
-            ElMessage.warning('请拖动滑块到最右侧完成验证')
+            // ElMessage.warning('请拖动滑块到最右侧完成验证')
         }
     }
 
     /**
      * 登录核心逻辑
-     * 流程：校验 -> 获取Token -> 存Token -> 拉取用户信息(含权限/菜单) -> 跳转
      */
     const handleLogin = async () => {
         try {
@@ -58,34 +56,35 @@ export function useLoginLogic() {
             const valid = await loginFormRef.value.validate()
             if (!valid) return
 
+            // 新增：校验滑块
+            if (!sliderSuccess.value) {
+                ElMessage.warning('请先完成安全验证')
+                return
+            }
+
             // 2. 发送登录请求
             const res = await service.post('/admin/auth/login', {
                 username: form.value.username,
                 password: form.value.password
             })
 
-            // 3. 核心修复：适配你 userStore.js 中的方法名
-            // 第一步：存储 Token（这会自动写入 sessionStorage）
+            // 3. 存储 Token
             userStore.setToken(res.data.token)
 
-            // 第二步：异步拉取完整的用户信息、菜单树、按钮权限标识
-            // 这一步非常重要，它会填充 userStore 里的 menus，从而让路由和侧边栏工作
+            // 4. 拉取用户信息和菜单
             await userStore.fetchUserInfo()
 
-            // 4. 提示+跳转首页
+            // 5. 跳转逻辑修正：必须匹配 router/index.js 中的父路径 /admin
             ElMessage.success('登录成功！')
-            router.push('/dashboard')
+            router.push('/admin/dashboard')
 
         } catch (error) {
-            // 错误处理
             console.error('登录失败：', error)
             sliderSuccess.value = false
             loginFailedTick.value++
-            // 错误信息通常在拦截器中已经 ElMessage.error 过了，这里仅作打印
         }
     }
 
-    // 返回供模板使用的变量/方法
     return {
         form,
         sliderSuccess,
