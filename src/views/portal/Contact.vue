@@ -31,8 +31,8 @@ import {ref, onMounted, onUnmounted} from 'vue'
 
 // --- 关键配置：请填入您申请的真实数据 ---
 const amapConfig = {
-  key: '您的Key',
-  securityJsCode: '您的安全密钥',
+  key: '44f0ed613243cb8061af74b2a7fbe0ec',
+  securityJsCode: '94c5c8e277897fe5b7af231d3581f087',
   defaultAddress: '甘肃省广河县中小微企业服务中心'
 }
 

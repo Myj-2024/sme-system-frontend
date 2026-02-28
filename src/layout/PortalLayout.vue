@@ -15,8 +15,12 @@
         <router-link to="/contact" :class="{ 'is-active': isActive('/contact') }">联系我们</router-link>
       </nav>
       <div class="nav-right">
-        <i class="el-icon-global"></i>
         <el-button border size="small" class="register-btn" @click="handleProblem">问题办理</el-button>
+
+        <a href="https://ycdoc.de5.net/" target="_blank" class="theme-doc-link">
+          <i class="el-icon-document-copy"></i>
+          <span>项目文档</span>
+        </a>
       </div>
     </header>
 
@@ -42,7 +46,6 @@ import {ElMessage} from "element-plus";
 const route = useRoute()
 const logoExists = ref(true)
 
-// 判断当前路由是否包含指定路径，用于高亮逻辑
 const isActive = (path) => {
   return route.path.startsWith(path)
 }
@@ -52,13 +55,11 @@ const handleImgError = (type) => {
 }
 
 const handleProblem = () => {
-  // 展示友好的消息提醒，使用 info 类型（蓝色）符合“开发中”的提示场景
-  ElMessage.info({
-    message: '接口开发中，该功能暂未上线！', // 更友好的提示文案
-    type: 'info', // 指定消息类型为信息提示
-    duration: 2000, // 提示框显示时长（毫秒），3秒后自动关闭
-    showClose: true, // 显示关闭按钮，支持手动关闭
-    center: true // 消息居中显示，提升用户体验
+  ElMessage({
+    message: '该模块正在加紧开发中，敬请期待！',
+    type: 'warning', // 改为 warning 更符合橙色主题
+    duration: 2500,
+    showClose: true
   })
 }
 </script>
@@ -130,7 +131,6 @@ const handleProblem = () => {
         border-radius: 3px 3px 0 0;
       }
 
-      /* 核心样式：当拥有 .is-active 类名时显示高亮 */
       &.is-active {
         color: #ff6a00 !important;
         font-weight: bold !important;
@@ -169,10 +169,53 @@ const handleProblem = () => {
   .nav-right {
     display: flex;
     align-items: center;
+    gap: 16px;
 
     .register-btn {
       border-radius: 20px;
-      padding: 8px 20px;
+      padding: 8px 18px;
+      background: white;
+      border: 1px solid #ff6a00;
+      color: #ff6a00;
+      font-weight: 500;
+      transition: all 0.3s;
+
+      &:hover {
+        background: #ff6a00;
+        color: white;
+        box-shadow: 0 4px 10px rgba(255, 106, 0, 0.2);
+      }
+    }
+
+    /* 美化后的项目文档链接样式 */
+    .theme-doc-link {
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #ff6a00;
+      background: rgba(255, 106, 0, 0.08);
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 106, 0, 0.15);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
+
+      i {
+        font-size: 16px;
+      }
+
+      &:hover {
+        background: rgba(255, 106, 0, 0.12);
+        border-color: #ff6a00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 106, 0, 0.12);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
     }
   }
 }
