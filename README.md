@@ -1,38 +1,61 @@
-# sem-vue
+[后端仓库](https://github.com/Myj-2024/sme-system-backend)
 
-This template should help get you started developing with Vue 3 in Vite.
+## 项目简介
 
-## Recommended IDE Setup
+基于 Vue 3 + Vite 构建的中小企业管理系统前端页面，适配 Element Plus 组件库，支持富文本编辑、数据可视化等核心功能。
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## 技术栈
 
-## Recommended Browser Setup
+- 核心框架：Vue 3.5+ (组合式API)
+- 构建工具：Vite 7.3+
+- UI 组件：Element Plus 2.8+
+- 状态管理：Pinia
+- 路由：Vue Router 4.4+
+- 网络请求：Axios
+- 富文本编辑：Quill / WangEditor / Tinymce
+- 数据可视化：ECharts 6.0
+- 样式预处理：Sass
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## 快速启动
 
-## Customize configuration
+### 环境准备
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+Node.js ^20.19.0 或 ≥22.12.0（推荐用 nvm 管理版本）
 
-## Project Setup
+### 运行步骤
 
-```sh
-npm install
+1. 克隆项目：
+
+```bash
+git clone https://github.com/Myj-2024/sme-system-frontend.git
+cd sme-system-frontend
 ```
 
-### Compile and Hot-Reload for Development
+2. 安装依赖：
 
-```sh
+```bash
+npm install   # 或 yarn install
+```
+
+3. 开发环境运行：
+
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+4. 生产打包：
 
-```sh
+```bash
 npm run build
 ```
+
+5. 预览打包产物：
+
+```bash
+npm run preview
+```
+
+## 注意事项
+
+- 项目采用 ES Module 模块规范（type: module）；
+- 需提前配置后端接口地址，确保前后端联调正常。
