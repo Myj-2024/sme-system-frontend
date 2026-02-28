@@ -46,5 +46,5 @@ router.beforeEach(async (to, from, next) => {
 })
 
 router.afterEach((to) => {
-    document.title = to.meta.title || '广河县中小微企业服务平台'
+    document.title = to.meta.title || 'xx县中小微企业服务系统'
 })

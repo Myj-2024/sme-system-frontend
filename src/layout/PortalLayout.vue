@@ -4,7 +4,7 @@
       <div class="nav-left">
         <div class="logo-box">
           <img src="/logo.png" alt="logo" v-if="logoExists" @error="handleImgError('logo')"/>
-          <span class="nav-brand">广河县中小微企业服务平台</span>
+          <span class="nav-brand">中小微企业服务系统</span>
         </div>
       </div>
       <nav class="nav-links">
@@ -33,7 +33,7 @@
     </main>
 
     <div class="copyright">
-      Copyright © 2026 广河县中小微企业服务中心
+      Copyright © 2026 中小微企业服务中心
     </div>
   </div>
 </template>

@@ -12,7 +12,7 @@
               <el-tag size="small" type="info" v-if="selectedLngLat">{{ selectedLngLat }}</el-tag>
             </li>
             <el-divider/>
-            <li><strong>服务地址：</strong> 甘肃省广河县中小微企业服务中心</li>
+            <li><strong>服务地址：</strong> xx县中小微企业服务中心</li>
             <li><strong>咨询电话：</strong> 0930-XXXXXXX</li>
             <li><strong>办公时间：</strong> 周一至周五 9:00 - 18:00</li>
           </ul>
@@ -35,7 +35,7 @@ const amapConfig = {
   securityJsCode: '94c5c8e277897fe5b7af231d3581f087',
   // 修改为指定的默认经纬度
   defaultLngLat: [103.550173, 35.485621],
-  defaultAddress: '甘肃省广河县中小微企业服务中心'
+  defaultAddress: 'xx县中小微企业服务中心'
 }
 
 const selectedAddress = ref('')
