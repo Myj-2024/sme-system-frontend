@@ -45,6 +45,17 @@ export function updateEnterpriseIsShow(id, isShow) {
 }
 
 /**
+ * 获取已显示的企业列表
+ */
+export function getShowEnterpriseList() {
+    return request({
+        url: '/admin/enterprise/show/list',
+        method: 'get'
+    })
+}
+
+
+/**
  * 图标上传
  * @param {FormData} formData
  */

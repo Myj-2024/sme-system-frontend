@@ -5,10 +5,10 @@
         <h2>企业风采</h2>
       </div>
 
-      <el-row :gutter="20" v-if="enterpriseList.length > 0">
+      <el-row :gutter="20" v-if="pagedList.length > 0">
         <el-col
             :span="8"
-            v-for="item in enterpriseList"
+            v-for="item in pagedList"
             :key="item.id"
             style="margin-bottom: 25px"
         >
@@ -99,12 +99,12 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
+import {ref, onMounted, computed} from 'vue'
 import {ElMessage} from 'element-plus'
-import {pageEnterprise} from '@/api/enterprise'
+import {getShowEnterpriseList} from '@/api/enterprise' // 修改为新的API方法
 import {listDictItemByDictCode} from '@/api/dictItem'
 
-const enterpriseList = ref([])
+const allEnterpriseList = ref([]) // 存储接口返回的所有企业
 const loading = ref(false)
 const total = ref(0)
 const pageNum = ref(1)
@@ -120,14 +120,23 @@ const dicts = {
   status: []
 }
 
+// 计算当前页面要显示的数据
+const pagedList = computed(() => {
+  const start = (pageNum.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return allEnterpriseList.value.slice(start, end)
+})
+
 const getLabel = (options, code) => {
-  const match = options.find(i => i.itemCode === code)
+  if (!code) return ''
+  const match = options.find(i => String(i.itemCode) === String(code))
   return match ? match.itemName : ''
 }
 
 const getList = async () => {
   loading.value = true
   try {
+    // 1. 并发加载字典
     if (dicts.type.length === 0) {
       const [t, tw, ind, st] = await Promise.all([
         listDictItemByDictCode('enterprise_type'),
@@ -141,19 +150,12 @@ const getList = async () => {
       dicts.status = st.data || []
     }
 
-    const params = {
-      pageNum: pageNum.value,
-      pageSize: pageSize.value,
-      isShow: 1
-    }
+    // 2. 调用后端 getShowList 对应的 API
+    const res = await getShowEnterpriseList()
+    const records = res.data || []
 
-    const res = await pageEnterprise(params)
-    const records = res.data?.records || []
-
-    // 核心逻辑：前端进行二次过滤，确保只展示 isShow 为 1 的数据
-    const filteredRecords = records.filter(item => String(item.isShow) === '1')
-
-    enterpriseList.value = filteredRecords.map(item => ({
+    // 3. 映射字典标签
+    allEnterpriseList.value = records.map(item => ({
       ...item,
       enterpriseTypeLabel: getLabel(dicts.type, item.enterpriseType),
       industryLabel: getLabel(dicts.industry, item.industryId),
@@ -161,13 +163,8 @@ const getList = async () => {
       businessStatusLabel: getLabel(dicts.status, item.businessStatus)
     }))
 
-    // 如果后端过滤不彻底，总数 total 也会包含不可见数据，这里优先使用后端返回的总数
-    // 但如果发现当前页被过滤掉了数据，则说明后端 total 有误，此处做最小兼容处理
-    total.value = res.data?.total || 0
-    if (records.length > filteredRecords.length && total.value > 0) {
-      // 这是一个简单的校准，若后端修复了过滤则无需此行
-      total.value = total.value - (records.length - filteredRecords.length)
-    }
+    // 4. 根据数组长度设置总数
+    total.value = allEnterpriseList.value.length
 
   } catch (e) {
     console.error("加载数据失败:", e)
@@ -195,7 +192,6 @@ const handleViewDetail = (row) => {
 
 const handlePageChange = (val) => {
   pageNum.value = val
-  getList()
   window.scrollTo({top: 0, behavior: 'smooth'})
 }
 
@@ -205,7 +201,6 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-/* 样式保持不变 */
 .login-content {
   flex: 1;
   display: flex;
