@@ -17,7 +17,7 @@
       <div class="nav-right">
         <el-button border size="small" class="register-btn" @click="handleProblem">问题办理</el-button>
 
-        <a href="https://ycdoc.de5.net/" target="_blank" class="theme-doc-link">
+        <a href="https://ycdoc.de5.net/sme-docs/" target="_blank" class="theme-doc-link">
           <i class="el-icon-document-copy"></i>
           <span>项目文档</span>
         </a>
